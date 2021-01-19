@@ -74,11 +74,8 @@ Function Delete-PnPEmptyFolder([Microsoft.SharePoint.Client.Folder]$Folder)
 			Write-host $parentFolder
 			Write-Host "Empty folder:" $Folder.Name "in" $ParentFolderURL -ForegroundColor Red
 		}
-		$global:deleteLimitCounter
     }
 }
-
-
 
 #-----------------------------------------------------------[Execution]------------------------------------------------------------
 
