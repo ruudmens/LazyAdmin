@@ -5,7 +5,8 @@ Function Get-MFAStatus {
 
   .DESCRIPTION
     This script will get the Azure MFA Status for your users. You can query all the users, admins only or a single user.
-      The script will only get enabled user accounts.
+   
+		It will return the MFA Status, MFA type (
 
   .NOTES
     Name: Get-MFAStatus
@@ -13,6 +14,7 @@ Function Get-MFAStatus {
     Version: 1.0
     DateCreated: jan 2021
     Purpose/Change: Initial script development
+		Thanks to: Anthony Bartolo
 
   .LINK
     https://lazyadmin.nl
@@ -115,8 +117,8 @@ Process {
   # Check if a UserPrincipalName is given
   # Get the MFA status for the given user(s) if they exist
   if ($PSBoundParameters.ContainsKey('UserPrincipalName')) {
-    try {
-      foreach ($user in $UserPrincipalName) {
+    foreach ($user in $UserPrincipalName) {
+			try {
         $MsolUser = Get-MsolUser -UserPrincipalName $user -ErrorAction Stop
 
         [PSCustomObject]@{
@@ -125,19 +127,20 @@ Process {
           isAdmin           = if ($listAdmins -and $admins.EmailAddress -match $MsolUser.UserPrincipalName) {$true} else {"-"}
           MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
           MFAType           = $MsolUser.StrongAuthenticationMethods | Where-Object {$_.IsDefault -eq $true} | Select-Object -ExpandProperty MethodType
+					MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
         }
       }
-    }
-    catch {
-      [PSCustomObject]@{
-        DisplayName       = " - Not found"
-        UserPrincipalName = $User
-        isAdmin           = $null
-        MFAEnabled        = $null
-      }
+			catch {
+				[PSCustomObject]@{
+					DisplayName       = " - Not found"
+					UserPrincipalName = $User
+					isAdmin           = $null
+					MFAEnabled        = $null
+				}
+			}
     }
   }
-      # Get only the admins and check their MFA Status
+  # Get only the admins and check their MFA Status
   elseif ($adminsOnly) {
     foreach ($admin in $admins) {
       $MsolUser = Get-MsolUser -ObjectId $admin.ObjectId | Sort-Object UserPrincipalName -ErrorAction Stop
@@ -148,6 +151,7 @@ Process {
         isAdmin           = $true
         MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
         MFAType           = $MsolUser.StrongAuthenticationMethods | Where-Object {$_.IsDefault -eq $true} | Select-Object -ExpandProperty MethodType
+				MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
       }
     }
   }
@@ -166,6 +170,7 @@ Process {
               isAdmin           = if ($listAdmins -and $admins.EmailAddress -match $MsolUser.UserPrincipalName) {$true} else {"-"}
               MFAEnabled        = $false
               MFAType           = "-"
+							MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
             }
           }
         }else{
@@ -175,6 +180,7 @@ Process {
             isAdmin           = if ($listAdmins -and $admins.EmailAddress -match $MsolUser.UserPrincipalName) {$true} else {"-"}
             MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
             MFAType           = $MsolUser.StrongAuthenticationMethods | Where-Object {$_.IsDefault -eq $true} | Select-Object -ExpandProperty MethodType
+						MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
           }
         }
       }
