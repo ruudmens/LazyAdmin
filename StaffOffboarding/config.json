@@ -1,0 +1,17 @@
+{
+  "Settings": {
+    "adminGroup": "Administrators",
+    "adminUserPrincipalName": "ruud@lazyadmin.nl",
+    "externalOutOfOfficeMessage": "I am no longer with [company name]. Please direct enquiries to {{manager.fullname}} {{manager.mail}}.",
+    "internalOutOfOfficeMessage": "I have left the building. Please direct any emails at {{manager.fullname}} {{manager.mail}}.",
+    "mailTemplateFile": "MailTemplateUserRemoved.html",
+    "mailTemplateFileAdmin": "MailTemplateUserRemovedtoAdmin.html",
+    "removeUserFromGroup": "<group_name>"
+  },
+  "SMTP": {
+    "address": "contoso-com.mail.protection.outlook.com",
+    "from": "IT Department <it@lazyadmin.nl>",
+    "subject": "Account of {{user.fullname}} is closed",
+    "adminEmail": "it@lazyadmin.nl"
+  }
+}
