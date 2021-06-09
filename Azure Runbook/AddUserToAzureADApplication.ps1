@@ -1,17 +1,17 @@
 <#
   .Synopsis
-    Azure Runbook - AddUserToAttlasian
+    Azure Runbook - AddUserToAzureADApplication
 
   .DESCRIPTION
     Add the user to the enterprise application atlassian cloud for Jira. This way user can be add in the helpdesk tool
 
   .NOTES
-    Name: RunBook - AddUserToAttlasian 
+    Name: RunBook - AddUserToAzureADApplication 
     Author: R. Mens  - LazyAdmin.nl
     Version: 1.1
     DateCreated: April 2021
     Purpose/Change: used only AzureAd
-                    Compare licensed users and atlassian user, add the missing
+                    Compare licensed users and existing user, add the missing
 
   .LINK
     https://lazyadmin.nl
