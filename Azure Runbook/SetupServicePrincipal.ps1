@@ -13,6 +13,7 @@
 	Creation Date:  24-05-2021
 
 .Change
+	1.2 Use filter instead of where-object
 	1.1 Set all permissions in one run so you only have to grant admin consent once.
 	
 .LINK
@@ -35,14 +36,14 @@ $servicePrincipalObjectId = ""
 # Optional - list ActiveDirectory Roles
 # Get-AzureADDirectoryRole
 
-Add-AzureADDirectoryRoleMember -ObjectId (Get-AzureADDirectoryRole | where-object {$_.DisplayName -eq "Global Administrator"}).Objectid -RefObjectId $servicePrincipalObjectId
+Add-AzureADDirectoryRoleMember -ObjectId (Get-AzureADDirectoryRole -Filter "Displayname eq 'Global Administrator'").ObjectId -RefObjectId $servicePrincipalObjectId
 
 # Assign Exchange Online Permission
 # First check if we have the Exchange Administrator role in our tenant, otherwise enable it.
 if (Get-AzureADDirectoryRole | where-object {$_.DisplayName -eq "Exchange Administrator"} -eq $null) { 
-	Enable-AzureADDirectoryRole -RoleTemplateId (Get-AzureADDirectoryRoleTemplate | Where-Object {$_.DisplayName -eq "Exchange Administrator"}).Objectid
+	Enable-AzureADDirectoryRole -RoleTemplateId (Get-AzureADDirectoryRole -Filter "Displayname eq 'Exchange Administrator'").ObjectId
 }
-Add-AzureADDirectoryRoleMember -ObjectId (Get-AzureADDirectoryRole | where-object {$_.DisplayName -eq "Exchange Administrator"}).Objectid -RefObjectId $servicePrincipalObjectId
+Add-AzureADDirectoryRoleMember -ObjectId (Get-AzureADDirectoryRole -Filter "Displayname eq 'Exchange Administrator'").ObjectId -RefObjectId $servicePrincipalObjectId
 
 # Get the Service Principal object
 $servicePrincipal = Get-AzureADServicePrincipal -ObjectId $servicePrincipalObjectId

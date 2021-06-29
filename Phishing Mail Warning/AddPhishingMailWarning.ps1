@@ -12,7 +12,8 @@ $HTMLDisclaimer = '<table border=0 cellspacing=0 cellpadding=0 align="left" widt
 			</div>
 		</td>
 	</tr>
-</table>'
+</table>
+<br/>'
 
 
 Write-Host "Creating Transport Rule" -ForegroundColor Cyan

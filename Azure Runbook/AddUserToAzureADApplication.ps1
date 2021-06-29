@@ -32,7 +32,7 @@ if ((Get-Module -ListAvailable -Name AzureAd) -ne $null)
 # Get the service principal for the app you want to assign the user to
 $servicePrincipal = Get-AzureADServicePrincipal -Filter "Displayname eq 'APPLICATION NAME'"
 
-# Get all users that are already assigned to Atlassian Cloud
+# Get all users that are already assigned to the application
 $existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servicePrincipal.Objectid | select -ExpandProperty PrincipalId
 
 # Get all licensedUsers
