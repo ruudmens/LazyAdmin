@@ -1,0 +1,63 @@
+Password.*[expire|reset]
+Password access
+[reset|change|update].*password
+Change.*password
+\.odt
+E-Notification
+EMERGENCY
+Retrieve*.document
+Download*.document
+confirm ownership for
+word must be installed
+prevent further unauthorized
+prevent further unauthorised
+informations has been
+fallow our process
+confirm your informations
+failed to validate
+unable to verify
+delayed payment
+activate your account
+Update your payment
+submit your payment
+via Paypal
+has been compromised
+FRAUD NOTICE
+your account will be closed
+your apple id was used to sign in to
+was blocked for violation
+urged to download
+that you validate your account
+multiple login attempt
+trying to access your account
+suspend your account
+restricted if you fail to update
+informations on your account
+update your account information
+update in our security
+Unusual sign-in activity
+Account Was Limited
+verify and reactivate
+has.*been.*limited
+have.*locked
+has.*been.*suspended
+unusual.*activity
+notifications.*pending
+your\ (customer\ )?account\ has
+your\ (customer\ )?account\ was
+new.*voice(\ )?mail
+Periodic.*Maintenance
+refund.*not.*approved
+account.*(is\ )?on.*hold
+wire.*transfer
+secure.*update
+secure.*document
+temporar(il)?y.*deactivated
+verification.*required
+blocked\ your?\ online
+suspicious\ activit
+securely*.onedrive
+securely*.dropbox
+securely*.google drive
+view message
+view attachment
