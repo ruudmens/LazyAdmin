@@ -6,14 +6,38 @@
   Collects all the mailbox and archive stats from Exchange Online users. By default it will also
   include the Shared Mailboxes. 
 
-.OUTPUTS
-  CSV file
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com
+
+  Generate the mailbox size report with Shared mailboxes, mailbox archive and store 
+  the csv file in the script root location.
+
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -sharedMailboxes only
+
+  Get only the shared mailboxes
+
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -sharedMailboxes no
+
+  Get only the user mailboxes
+
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -archive:$false
+
+  Get the mailbox size without the archive mailboxes
+
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -path c:\temp\report.csv
+
+  Store CSV report in c:\temp\report.csv
 
 .NOTES
-  Version:        0.1
+  Version:        1.0
   Author:         R. Mens - LazyAdmin.nl
-  Creation Date:  03 march 2021
+  Creation Date:  23 sep 2021
   Purpose/Change: Initial script development
+  Link:           https://lazyadmin.nl/powershell/office-365-mailbox-size-report
 #>
 
 param(
@@ -95,8 +119,8 @@ Function Get-Mailboxes {
       "no" {$mailboxTypes = "UserMailbox"}
     }
 
-    Get-EXOMailbox -ResultSize 10 -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota,ProhibitSendReceiveQuota,ArchiveQuota,ArchiveWarningQuota,ArchiveDatabase | 
-      select UserPrincipalName,DisplayName,PrimarySMTPAddress,RecipientType,IssueWarningQuota,ProhibitSendReceiveQuota,ArchiveQuota,ArchiveWarningQuota,ArchiveDatabase
+    Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
+      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
   }
 }
 
@@ -140,22 +164,30 @@ Function Get-MailboxStats {
 
       # Get mailbox size
       $mailboxSize = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize
+      
+      # Get archive size if it exists and is requested
       $archiveSize = 0
 
-      # Get archive size if it exists and is requested
-      if (($archive) -and ($_.ArchiveDatabase -ne $null)) {
+      if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
         $result = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select @{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
-        $archiveSize = ConvertTo-Gb -size $result.TotalArchiveSize
+        if ($result -ne $null) {
+          $archiveSize = ConvertTo-Gb -size $result.TotalArchiveSize
+        }else{
+          $archiveSize = 0
+        }
+        
       }  
     
       [pscustomobject]@{
         "Display Name" = $_.DisplayName
         "Emailaddress" = $_.PrimarySMTPAddress
-        "Mailbox type" = $_.RecipientType
+        "Mailbox type" = $_.RecipientTypeDetails
         "Total size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
         "Delete item size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
+        "Mailbox Warning quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
         "Max mailbox size (Gb)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
         "Archive size (Gb)" = $archiveSize
+        "Archive Warning quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
         "Archive quota (Gb)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
       }
 
