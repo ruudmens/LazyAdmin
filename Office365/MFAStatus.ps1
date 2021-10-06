@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.1
+  Version: 1.2
   DateCreated: jan 2021
-  Purpose/Change: Initial script development
+  Purpose/Change: Fixed getting all Admins
 	Thanks to: Anthony Bartolo
 
 .LINK
@@ -53,19 +53,16 @@
 param(
   [Parameter(
     Mandatory = $false,
-    ValueFromPipeline = $true,
-    ValueFromPipelineByPropertyName = $true,
     ParameterSetName  = "UserPrincipalName",
+    HelpMessage = "Enter a single UserPrincipalName or a comma separted list of UserPrincipalNames",
     Position = 0
     )]
-  # Enter a single UserPrincipalName or a comma separted list of UserPrincipalNames
   [string[]]$UserPrincipalName,
 
   [Parameter(
     Mandatory = $false,
     ValueFromPipeline = $false,
-    ParameterSetName  = "AdminsOnly",
-    Position = 0
+    ParameterSetName  = "AdminsOnly"
   )]
   # Get only the users that are an admin
   [switch]$adminsOnly = $false,
@@ -76,12 +73,12 @@ param(
     ParameterSetName  = "AllUsers"
   )]
   # Set the Max results to return
-  [int]$MaxResults = 1000,
+  [int]$MaxResults = 10000,
 
   [Parameter(
     Mandatory         = $false,
     ValueFromPipeline = $false,
-    ParameterSetName  = "AllUsers"
+    ParameterSetName  = "Licenend"
   )]
   # Check only the MFA status of users that have license
   [switch]$IsLicensed = $true,
@@ -90,7 +87,7 @@ param(
     Mandatory         = $false,
     ValueFromPipeline = $true,
     ValueFromPipelineByPropertyName = $true,
-    ParameterSetName  = "AllUsers"
+    ParameterSetName  = "withOutMFAOnly"
   )]
   # Get only the users that don't have MFA enabled
   [switch]$withOutMFAOnly = $false,
@@ -103,16 +100,40 @@ param(
   [switch]$listAdmins = $true
 )
 
-Begin {
-  # Get all licensed admins
-  $admins = $null
 
-  if (($listAdmins) -or ($adminsOnly)) {
-    $admins = Get-MsolRoleMember -RoleObjectId $(Get-MsolRole -RoleName "Company Administrator").ObjectId | Where-Object {$_.isLicensed -eq $true} | Select-Object ObjectId,EmailAddress
+
+# Connect to Msol
+if ((Get-Module -ListAvailable -Name MSOnline) -eq $null)
+{
+  Write-Host "MSOnline Module is required, do you want to install it?" -ForegroundColor Yellow
+      
+  $install = Read-Host Do you want to install module? [Y] Yes [N] No 
+  if($install -match "[yY]") 
+  { 
+    Write-Host "Installing MSOnline module" -ForegroundColor Cyan
+    Install-Module MSOnline -Repository PSGallery -AllowClobber -Force
+  } 
+  else
+  {
+	  Write-Error "Please install MSOnline module."
   }
 }
 
-Process {
+if ((Get-Module -ListAvailable -Name MSOnline) -ne $null) 
+{
+	Connect-MsolService
+}
+else{
+  Write-Error "Please install Msol module."
+}
+  
+# Get all licensed admins
+$admins = $null
+
+if (($listAdmins) -or ($adminsOnly)) {
+  $admins = Get-MsolRole | %{$role = $_.name; Get-MsolRoleMember -RoleObjectId $_.objectid} | Where-Object {$_.isLicensed -eq $true} | select @{Name="Role"; Expression = {$role}}, DisplayName, EmailAddress | Sort-Object -Property EmailAddress -Unique
+}
+
 # Check if a UserPrincipalName is given
 # Get the MFA status for the given user(s) if they exist
 if ($PSBoundParameters.ContainsKey('UserPrincipalName')) {
@@ -202,7 +223,7 @@ else {
           [PSCustomObject]@{
             DisplayName       = $MsolUser.DisplayName
             UserPrincipalName = $MsolUser.UserPrincipalName
-            isAdmin           = if ($listAdmins -and $admins.EmailAddress -match $MsolUser.UserPrincipalName) {$true} else {"-"}
+            isAdmin           = if ($listAdmins -and ($admins.EmailAddress -match $MsolUser.UserPrincipalName)) {$true} else {"-"}
             MFAEnabled        = $false
             MFAType           = "-"
 						MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
@@ -212,7 +233,7 @@ else {
         [PSCustomObject]@{
           DisplayName       = $MsolUser.DisplayName
           UserPrincipalName = $MsolUser.UserPrincipalName
-          isAdmin           = if ($listAdmins -and $admins.EmailAddress -match $MsolUser.UserPrincipalName) {$true} else {"-"}
+          isAdmin           = if ($listAdmins -and ($admins.EmailAddress -match $MsolUser.UserPrincipalName)) {$true} else {"-"}
           MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
           MFAType           = $Method
 					MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
@@ -220,4 +241,3 @@ else {
       }
     }
   }
-}
