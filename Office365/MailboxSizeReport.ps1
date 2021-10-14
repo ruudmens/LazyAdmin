@@ -33,10 +33,10 @@
   Store CSV report in c:\temp\report.csv
 
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  23 sep 2021
-  Purpose/Change: Initial script development
+  Purpose/Change: Added Item Count and User last action time
   Link:           https://lazyadmin.nl/powershell/office-365-mailbox-size-report
 #>
 
@@ -119,7 +119,7 @@ Function Get-Mailboxes {
       "no" {$mailboxTypes = "UserMailbox"}
     }
 
-    Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
+    Get-EXOMailbox -ResultSize 10 -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
       select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
   }
 }
@@ -162,31 +162,36 @@ Function Get-MailboxStats {
 
     $mailboxes | ForEach {
 
-      # Get mailbox size
-      $mailboxSize = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize
+      # Get mailbox size     
+      $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
       
       # Get archive size if it exists and is requested
       $archiveSize = 0
+      $archiveResult = $null
 
       if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
-        $result = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select @{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
-        if ($result -ne $null) {
-          $archiveSize = ConvertTo-Gb -size $result.TotalArchiveSize
+        $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
+        if ($archiveResult -ne $null) {
+          $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
         }else{
           $archiveSize = 0
         }
-        
       }  
     
       [pscustomobject]@{
         "Display Name" = $_.DisplayName
         "Emailaddress" = $_.PrimarySMTPAddress
         "Mailbox type" = $_.RecipientTypeDetails
+        "Last user action time" = $mailboxSize.LastUserActionTime
         "Total size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
         "Delete item size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
+        "Item Count" = $mailboxSize.ItemCount
+        "Deleted Item Count" = $mailboxSize.DeletedItemCount
         "Mailbox Warning quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
         "Max mailbox size (Gb)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
         "Archive size (Gb)" = $archiveSize
+        "Archive Item Count" = $archiveResult.ItemCount
+        "Archive Deleted Item Count" = $archiveResult.DeletedItemCount
         "Archive Warning quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
         "Archive quota (Gb)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
       }
