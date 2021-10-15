@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.2
+  Version: 1.3
   DateCreated: jan 2021
-  Purpose/Change: Fixed getting all Admins
+  Purpose/Change: List all Configured MFA Types
 	Thanks to: Anthony Bartolo
 
 .LINK
@@ -131,7 +131,7 @@ else{
 $admins = $null
 
 if (($listAdmins) -or ($adminsOnly)) {
-  $admins = Get-MsolRole | %{$role = $_.name; Get-MsolRoleMember -RoleObjectId $_.objectid} | Where-Object {$_.isLicensed -eq $true} | select @{Name="Role"; Expression = {$role}}, DisplayName, EmailAddress | Sort-Object -Property EmailAddress -Unique
+  $admins = Get-MsolRole | %{$role = $_.name; Get-MsolRoleMember -RoleObjectId $_.objectid} | Where-Object {$_.isLicensed -eq $true} | select @{Name="Role"; Expression = {$role}}, DisplayName, EmailAddress, ObjectId | Sort-Object -Property EmailAddress -Unique
 }
 
 # Check if a UserPrincipalName is given
@@ -188,14 +188,18 @@ elseif ($adminsOnly) {
             "PhoneAppNotification" { $Method = "Authenticator app" }
         }
       }
-
+    
     [PSCustomObject]@{
       DisplayName       = $MsolUser.DisplayName
       UserPrincipalName = $MsolUser.UserPrincipalName
       isAdmin           = $true
-      MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
-      MFAType           = $Method
-			MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
+      "MFA Enabled"     = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
+      "MFA Default Type"= $Method
+      "SMS token"       = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "OneWaySMS") {$true} else {"-"}
+      "Phone call verification" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "TwoWayVoiceMobile") {$true} else {"-"}
+      "Hardware token or authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppOTP") {$true} else {"-"}
+      "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
+			MFAEnforced = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
     }
   }
 }
@@ -234,8 +238,12 @@ else {
           DisplayName       = $MsolUser.DisplayName
           UserPrincipalName = $MsolUser.UserPrincipalName
           isAdmin           = if ($listAdmins -and ($admins.EmailAddress -match $MsolUser.UserPrincipalName)) {$true} else {"-"}
-          MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
-          MFAType           = $Method
+          "MFA Enabled"     = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
+          "MFA Default Type"= $Method
+          "SMS token"       = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "OneWaySMS") {$true} else {"-"}
+          "Phone call verification" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "TwoWayVoiceMobile") {$true} else {"-"}
+          "Hardware token or authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppOTP") {$true} else {"-"}
+          "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
 					MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
         }
       }
