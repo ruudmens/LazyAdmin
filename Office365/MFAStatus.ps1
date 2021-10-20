@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.3
+  Version: 1.4
   DateCreated: jan 2021
-  Purpose/Change: List all Configured MFA Types
+  Purpose/Change: Check of existing MSOL Connection
 	Thanks to: Anthony Bartolo
 
 .LINK
@@ -119,9 +119,12 @@ if ((Get-Module -ListAvailable -Name MSOnline) -eq $null)
   }
 }
 
-if ((Get-Module -ListAvailable -Name MSOnline) -ne $null) 
+if ((Get-Module -ListAvailable -Name MSOnline) -ne $null)
 {
-	Connect-MsolService
+  if(-not (Get-MsolDomain -ErrorAction SilentlyContinue))
+  {
+	  Connect-MsolService
+  }
 }
 else{
   Write-Error "Please install Msol module."
