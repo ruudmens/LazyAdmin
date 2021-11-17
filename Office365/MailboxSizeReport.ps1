@@ -207,7 +207,7 @@ Function Get-MailboxStats {
 ConnectTo-EXO
 
 # Get mailbox status
-Get-MailboxStats | Export-CSV -Path $path -NoTypeInformation
+Get-MailboxStats | Export-CSV -Path $path -NoTypeInformation -Encoding UTF8
 
 if ((Get-Item $path).Length -gt 0) {
   Write-Host "Report finished and saved in $path" -ForegroundColor Green
