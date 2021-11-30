@@ -180,20 +180,20 @@ Function Get-MailboxStats {
     
       [pscustomobject]@{
         "Display Name" = $_.DisplayName
-        "Emailaddress" = $_.PrimarySMTPAddress
-        "Mailbox type" = $_.RecipientTypeDetails
-        "Last user action time" = $mailboxSize.LastUserActionTime
-        "Total size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
-        "Delete item size (Gb)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
+        "Email Address" = $_.PrimarySMTPAddress
+        "Mailbox Type" = $_.RecipientTypeDetails
+        "Last User Action Time" = $mailboxSize.LastUserActionTime
+        "Total Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
+        "Deleted Items Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
         "Item Count" = $mailboxSize.ItemCount
-        "Deleted Item Count" = $mailboxSize.DeletedItemCount
-        "Mailbox Warning quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
-        "Max mailbox size (Gb)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
-        "Archive size (Gb)" = $archiveSize
-        "Archive Item Count" = $archiveResult.ItemCount
-        "Archive Deleted Item Count" = $archiveResult.DeletedItemCount
-        "Archive Warning quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
-        "Archive quota (Gb)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
+        "Deleted Items Count" = $mailboxSize.DeletedItemCount
+        "Mailbox Warning Quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
+        "Max Mailbox Size (GB)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
+        "Archive Size (GB)" = $archiveSize
+        "Archive Items Count" = $archiveResult.ItemCount
+        "Archive Deleted Items Count" = $archiveResult.DeletedItemCount
+        "Archive Warning Quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
+        "Archive Quota (GB)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
       }
 
       $currentUser = $_.DisplayName
@@ -207,7 +207,7 @@ Function Get-MailboxStats {
 ConnectTo-EXO
 
 # Get mailbox status
-Get-MailboxStats | Export-CSV -Path $path -NoTypeInformation
+Get-MailboxStats | Export-CSV -Path $path -NoTypeInformation -Encoding UTF8
 
 if ((Get-Item $path).Length -gt 0) {
   Write-Host "Report finished and saved in $path" -ForegroundColor Green
