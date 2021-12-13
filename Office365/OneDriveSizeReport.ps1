@@ -16,6 +16,7 @@
   Store CSV report in c:\temp\reportoneDrive.csv
 
 .NOTES
+  Name:           Get-OneDriveSizeReport
   Version:        1.0
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  27 sep 2021
