@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.4
+  Version: 1.5
   DateCreated: jan 2021
-  Purpose/Change: Check of existing MSOL Connection
+  Purpose/Change: Typo
 	Thanks to: Anthony Bartolo
 
 .LINK
@@ -78,7 +78,7 @@ param(
   [Parameter(
     Mandatory         = $false,
     ValueFromPipeline = $false,
-    ParameterSetName  = "Licenend"
+    ParameterSetName  = "Licensed"
   )]
   # Check only the MFA status of users that have license
   [switch]$IsLicensed = $true,
