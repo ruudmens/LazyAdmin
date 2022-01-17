@@ -33,10 +33,10 @@
   Store CSV report in c:\temp\report.csv
 
 .NOTES
-  Version:        1.1
+  Version:        1.2
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  23 sep 2021
-  Purpose/Change: Added Item Count and User last action time
+  Purpose/Change: Check if we have a mailbox, before running the numbers
   Link:           https://lazyadmin.nl/powershell/office-365-mailbox-size-report
 #>
 
@@ -164,41 +164,44 @@ Function Get-MailboxStats {
 
       # Get mailbox size     
       $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
+
+      if ($mailboxSize -ne $null) {
       
-      # Get archive size if it exists and is requested
-      $archiveSize = 0
-      $archiveResult = $null
+        # Get archive size if it exists and is requested
+        $archiveSize = 0
+        $archiveResult = $null
 
-      if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
-        $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
-        if ($archiveResult -ne $null) {
-          $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
-        }else{
-          $archiveSize = 0
-        }
-      }  
+        if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
+          $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
+          if ($archiveResult -ne $null) {
+            $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
+          }else{
+            $archiveSize = 0
+          }
+        }  
     
-      [pscustomobject]@{
-        "Display Name" = $_.DisplayName
-        "Email Address" = $_.PrimarySMTPAddress
-        "Mailbox Type" = $_.RecipientTypeDetails
-        "Last User Action Time" = $mailboxSize.LastUserActionTime
-        "Total Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
-        "Deleted Items Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
-        "Item Count" = $mailboxSize.ItemCount
-        "Deleted Items Count" = $mailboxSize.DeletedItemCount
-        "Mailbox Warning Quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
-        "Max Mailbox Size (GB)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
-        "Archive Size (GB)" = $archiveSize
-        "Archive Items Count" = $archiveResult.ItemCount
-        "Archive Deleted Items Count" = $archiveResult.DeletedItemCount
-        "Archive Warning Quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
-        "Archive Quota (GB)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
-      }
+        [pscustomobject]@{
+          "Display Name" = $_.DisplayName
+          "Email Address" = $_.PrimarySMTPAddress
+          "Mailbox Type" = $_.RecipientTypeDetails
+          "Last User Action Time" = $mailboxSize.LastUserActionTime
+          "Total Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0]
+          "Deleted Items Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
+          "Item Count" = $mailboxSize.ItemCount
+          "Deleted Items Count" = $mailboxSize.DeletedItemCount
+          "Mailbox Warning Quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
+          "Max Mailbox Size (GB)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
+          "Archive Size (GB)" = $archiveSize
+          "Archive Items Count" = $archiveResult.ItemCount
+          "Archive Deleted Items Count" = $archiveResult.DeletedItemCount
+          "Archive Warning Quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
+          "Archive Quota (GB)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
+        }
 
-      $currentUser = $_.DisplayName
-      Write-Progress -Activity "Collecting mailbox status" -Status "Current Count: $i" -PercentComplete (($i / $mailboxes.Count) * 100) -CurrentOperation "Processing mailbox: $currentUser"
-      $i++;
+        $currentUser = $_.DisplayName
+        Write-Progress -Activity "Collecting mailbox status" -Status "Current Count: $i" -PercentComplete (($i / $mailboxes.Count) * 100) -CurrentOperation "Processing mailbox: $currentUser"
+        $i++;
+      }
     }
   }
 }
