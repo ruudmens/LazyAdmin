@@ -1,0 +1,904 @@
+homeassistant:
+  packages: !include_dir_named include
+
+background: rgb(248,250,251)
+
+button_card_templates:
+  base:
+    styles:
+      card:
+        - height: 100%          
+        - padding: 15px
+        - background-color: rgba(255, 255, 255, 1);
+      name:
+        - color: rgb(24, 24, 24);
+        - justify-self: start;
+        - font-weight: 400
+        - font-family: "LatoWeb"
+      state:
+        - color: rgb(117,124,136);
+        - justify-self: start
+        - font-weight: 400
+        - font-family: "LatoWeb"
+        - font-size: 14px
+        - margin-top: -10px
+    style: |
+      ha-card {
+        background-color: rgba(255, 255, 255, 1);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+        box-shadow: none !important;
+        transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+      }
+      #icon {
+        width: 25px !important;
+        margin-right: 8px;
+        margin-top: -20px;
+      }
+      #container{
+        margin: -10px 0;
+      }
+  quick-action:
+    styles:
+        card:
+        - paddding: 15px;
+        grid:
+        - grid-template-areas: '"i" "n" "s"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 2fr 1fr 1fr
+        img_cell:
+        - align-self: start
+        - text-align: start
+        - justify-content: start
+        name:
+        - font-size: 17px
+        - justify-self: start
+        - color: #213953;
+        - margin-top: 10px;
+        state:
+        - font-size: 13px
+        - align-self: left
+        - justify-self: start
+        - color: rgb(170,171,175)
+  graph:
+    styles:
+        card:
+        - paddding: 0px;
+#
+# Kiosk mode settings to hide menu and sidebar on tablet
+#
+kiosk_mode:
+  mobile_settings:
+    hide_header: true
+    hide_sidebar: true
+    ignore_entity_settings: true
+    custom_width: 1320
+
+views:
+  - title: Home
+    id: home
+    type: 'custom:grid-layout'
+    layout:
+        max_cols: 5
+        grid-template-columns: 160px 160px 160px 160px 280px
+        grid-template-rows: 220px 160px 160px
+    cards: 
+        #
+        # Weather card
+        #
+        - type: custom:weather-card
+          entity: weather.home
+          icons: "/local/community/weather-card/icons/"
+          current: true
+          details: false
+          forecast: true
+          hourly_forecast: false
+          number_of_forecasts: 3
+          view_layout:
+            grid-column: 1 / 5
+            grid-row: 1
+          style: |
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+                grid-template-columns: 1fr 2fr;
+                grid-template-rows: 1fr;
+                display: grid;
+            }
+            .current{
+                width: 200px;
+                margin-bottom: 0 !important;
+                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-rows: 50px 30px 30px;
+                display: grid;
+            }
+            .current .icon.bigger, .current .temp, .current .tempc {
+                position: inherit;
+            }
+            .currentWeather{
+                font-size: 18px !important;
+                grid-column-start: 2;
+                grid-column-end: 2;
+                grid-row-start: 2;
+                margin-top: 15px;
+                color: rgb(114,114,114);
+                text-align: left;
+            }
+             .current .temp {
+                color: #213953;;
+                font-size: 40px;
+                grid-column-start: 1;
+                grid-row-start: 1;
+                justify-self: right;
+                margin-top: 15px;
+                opacity: 0.8
+            }
+            .current .tempc {
+                color: rgb(170,171,175);
+                opacity: 0.6;
+                font-size: 20px;
+                grid-column-start: 2;
+                justify-self: left;
+                grid-row-start: 1;
+                margin-top: 8px !important;               
+            }
+            .current .icon{
+                
+                grid-column-start: 1;
+                grid-column-end: 3;
+                grid-row-start: 2;
+                width: 50px !important;
+                height: 50px !important;
+                margin-top: 0px !important;
+                text-indent: 0 !important;
+
+                text-align: right;
+                line-height: 50px;
+            }
+            .forecast .highTemp{
+                color: #213953;
+            }
+            .forecast .precipitation{
+                color: rgb(170,171,175);
+            }
+            .forecast .dayname{
+                color: #213953;
+            }
+           
+        #
+        # Upcoming Events
+        #
+        - type: custom:atomic-calendar-revive
+          entities:
+          - entity: calendar.family
+            titleColor: #213953;
+            maxEventCount: 5
+          language: nl 
+          europeanDate: true
+          noEventsForNextDaysText: Geen afspraken komende dagen
+          noEventsForTodayText: Geen afspraken vandaag
+          untilText: tot
+          fullDayEventText: Hele dag
+          refreshInterval: 300
+          dateFormat: LL
+          locationLinkColor: rgb(170,171,175);
+          showProgressBar: false
+          view_layout:
+            grid-column: 5 / 6
+            grid-row: 1
+          style: |
+            ::-webkit-scrollbar {
+                display: none;
+            }
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .event-titleRunning {
+                color: #213953;
+            }
+            .cal-card {
+                padding: 0;
+            }
+            .cal-eventContainer{
+                padding-top: 15px !important;
+            }
+            .event-title{
+                color: #213953;
+            }
+            .daywrap {
+                border-top: 10px solid rgb(248,250,251);
+            }
+            .hoursHTML, .relativeTime{
+                color: rgb(170,171,175);
+            }
+        #
+        # Second row
+        # Lights off/on | Hang out | Game Mode | Kitchen | Security (double)
+        #
+        # Room lights
+        - type: custom:state-switch
+          entity: light.lampen_woonkamer
+          default: off
+          view_layout:
+            grid-column: 1
+            grid-row: 2
+          states:
+            "on":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.lampen_uit_knop
+                name: Room
+                icon:  mdi:lightbulb-on
+                show_state: true
+                show_header_toggle: false
+                state_display: "Turn off all lights"
+                styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+            "off":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.lampen_aan_knop
+                name: Room
+                icon:  mdi:lightbulb-outline
+                show_state: true  
+                show_header_toggle: false
+                state_display: "Turn on all lights"
+                styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+        # Kitchen Lights
+        - type: custom:state-switch
+          entity: template
+          template: >
+            {% if state_attr('light.ks_6', 'brightness') != None %} 
+              {% if state_attr('light.ks_6', 'brightness') > 45 %} 
+                  cooking 
+              {% else %}
+                  dimmed
+              {% endif %}
+            {% else %}
+              turnedOff
+            {% endif %}
+          view_layout:
+            grid-column: 2
+            grid-row: 2
+          states:
+            "cooking":
+                  type: 'custom:button-card'
+                  template:
+                  - base
+                  - quick-action
+                  entity: switch.keuken_dimmed_knop
+                  name: Kitchen
+                  icon:  mdi:lightbulb-on
+                  show_state: true  
+                  show_header_toggle: false
+                  state_display: "Dim kitchen lights"
+                  styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                  style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+            "dimmed":
+                  type: 'custom:button-card'
+                  template:
+                  - base
+                  - quick-action
+                  entity: switch.keuken_kookmodus_knop
+                  name: Kitchen
+                  icon:  mdi:lightbulb-on-outline
+                  show_state: true  
+                  show_header_toggle: false
+                  state_display: "Turn on cooking mode"
+                  styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                  style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+            "turnedOff":
+                  type: 'custom:button-card'
+                  template:
+                  - base
+                  - quick-action
+                  entity: switch.keuken_dimmed_knop
+                  name: Kitchen
+                  icon:  mdi:lightbulb-outline
+                  show_state: true  
+                  show_header_toggle: false
+                  state_display: "Turn on kitchen lights"
+                  styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                  style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+        # Hangout Scene
+        - type: 'custom:button-card'
+          template:
+          - base
+          - quick-action
+          entity: switch.hang_out_knop
+          name: Hang out
+          icon:  mdi:music-note
+          show_state: false  
+          show_header_toggle: false
+          view_layout:
+            grid-column: 3 / 4
+            grid-row: 2 / 3
+          styles:
+            icon:
+            - color: rgb(0,201,167)
+        # Game Scene
+        - type: 'custom:button-card'
+          template:
+          - base
+          - quick-action
+          entity: switch.games_knop
+          name: Game mode
+          icon:  mdi:sony-playstation
+          show_state: false  
+          show_header_toggle: false
+          view_layout:
+            grid-column: 4 / 5
+            grid-row: 2 / 3
+          styles:
+            icon:
+            - color: rgb(193,167,206)
+        # Alarm
+        - type: custom:state-switch
+          entity: switch.surveillance_status
+          default: off
+          view_layout:
+            grid-column: 5 / 6
+            grid-row: 2 / 3
+          states:
+            "on":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.alarm_uit_knop
+                name: Security
+                icon:  mdi:shield
+                show_state: true
+                show_header_toggle: false
+                state_display: "Disabled alarm"
+                styles:
+                    icon:
+                    - color: rgb(237,216,163)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+            "off":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.alarm_uit_knop
+                name: Security
+                icon:  mdi:shield-outline
+                show_state: true  
+                show_header_toggle: false
+                state_display: "Enable alarm"
+                styles:
+                    icon:
+                    - color: rgb(237,216,163)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+        #
+        # Third row
+        # Climate | Humidity | Solar | Car | Media 
+        #
+        # Climate
+        - type: 'custom:mini-graph-card'
+          name: Climate
+          icon: 'mdi:thermometer-low'
+          entities:
+            - entity: sensor.tado_temperature
+              name: temp
+              show_legend: false
+              show_state: true
+              show_fill: false
+          show_state: true
+          show_header_toggle: true
+          view_layout:
+            grid-column: 1
+            grid-row: 3
+          #icon: "${states('sensor.tado_heating') | float > 0 ? 'mdi:thermometer-chevron-up' : 'mdi:thermometer-low'}"
+          hours_to_show: 12
+          points_per_hour: 2
+          line_width: 8
+          height: 140
+          animate: true
+          upper_bound: 30
+          lower_bound: 15
+          align_icon: left
+          align_header: left
+          color_thresholds:
+            - value: 16
+              color: "#dae1f6"
+            - value: 18
+              color: "#f7d5f5"
+            - value: 19
+              color: "#ffc9d0"
+            - value: 19.5
+              color: "#ffcba7"
+            - value: 20
+              color: "#fbd786"
+            - value: 21
+              color: "#ffbd79"
+            - value: 22
+              color: "#ffa375"
+            - value: 23
+              color: "#fd9077"
+            - value: 25
+              color: "#f77d7d"
+          show:
+            labels: false
+          style: |
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .name > span {
+                color: rgb(170,171,175);
+                font-weight: 400 !important;
+                font-size: 13px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+                width: 100px !important;
+            }
+            .icon {
+                margin-right: 0px !important;
+                color: rgb(170,171,175) !important;
+                margin-left: -5px !important;
+            }
+            .header.flex .icon {
+                --mdc-icon-size: 20px;
+              }
+            .states{
+                font-size: 16px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__value{
+                font-size: 24px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__uom{
+                color: rgb(117,125,135) !important;
+                font-size: 14px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+            }
+            .graph {
+                padding: 0 15px !important;
+                margin-top: -10px !important;
+            }
+        # Humidity
+        - type: 'custom:mini-graph-card'
+          name: Humidity
+          icon: 'mdi:water'
+          entities:
+            - entity: sensor.tado_humidity
+              name: temp
+              show_legend: false
+              show_state: true
+              show_fill: false
+          show_state: true
+          show_header_toggle: true
+          view_layout:
+            grid-column: 2
+            grid-row: 3
+          hours_to_show: 12
+          points_per_hour: 2
+          line_width: 8
+          height: 140
+          animate: true
+          upper_bound: 80
+          lower_bound: 40
+          align_icon: left
+          align_header: left
+          color_thresholds:
+            - value: 50
+              color: "#00B4DB"
+            - value: 70
+              color: "#0083B0"
+          show:
+            labels: false
+          style: |
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .name > span {
+                color: rgb(170,171,175);
+                font-weight: 400 !important;
+                font-size: 13px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+                width: 100px !important;
+            }
+            .icon {
+                margin-right: 0px !important;
+                color: rgb(170,171,175) !important;
+                margin-left: -5px !important;
+            }
+            .header.flex .icon {
+                --mdc-icon-size: 20px;
+              }
+            .states{
+                font-size: 16px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__value{
+                font-size: 24px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__uom{
+                color: rgb(117,125,135) !important;
+                font-size: 14px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+            }
+            .graph {
+                padding: 0 15px !important;
+                margin-top: -10px !important;
+            }
+        # Solar
+        - type: 'custom:mini-graph-card'
+          name: Solar
+          icon: 'mdi:solar-power'
+          entities:
+            - entity: sensor.sma_4_0_netvermogen
+              name: watt
+              show_legend: false
+              show_state: true
+              show_fill: false
+          show_state: true
+          show_header_toggle: true
+          view_layout:
+            grid-column: 3
+            grid-row: 3
+          hours_to_show: 12
+          points_per_hour: 3
+          line_width: 8
+          height: 140
+          animate: true
+          upper_bound: 4100
+          lower_bound: 0
+          align_icon: left
+          align_header: left
+          color_thresholds:
+            - value: 0
+              color: "#45B649"
+            - value: 4000
+              color: "#DCE35B"
+          show:
+            labels: false
+          style: |
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .name > span {
+                color: rgb(170,171,175);
+                font-weight: 400 !important;
+                font-size: 13px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+                width: 100px !important;
+            }
+            .icon {
+                margin-right: 0px !important;
+                color: rgb(170,171,175) !important;
+                margin-left: -5px !important;
+            }
+            .header.flex .icon {
+                --mdc-icon-size: 20px;
+            }
+            .states{
+                font-size: 16px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__value{
+                font-size: 24px !important;
+                font-weight: 400;
+                color: #213953;
+                font-family: "LatoWeb"
+            }
+            .state__uom{
+                color: rgb(117,125,135) !important;
+                font-size: 14px !important;
+                font-family: "LatoWeb";
+                opacity: 1 !important;
+            }
+            .graph {
+                padding: 0 15px !important;
+                margin-top: -10px !important;
+            }
+        # Car
+        - type: 'custom:button-card'
+          entity: binary_sensor.kia_charging
+          view_layout:
+            grid-column: 4
+            grid-row: 3
+          icon: >
+            [[[
+                if (states['binary_sensor.kia_charging'].state == 'on')
+                    return "mdi:ev-plug-type2";
+                return "mdi:connection"
+            ]]]
+          aspect_ratio: 1/1
+          name: Car
+          styles:
+            grid:
+                - grid-template-areas: '"i n" "range range" "note note"'
+                - grid-template-columns: 1fr 1fr
+                - grid-template-rows: 3fr 7fr 1fr
+            img-cell:
+                - align-self: end
+                - text-align: end
+                - justify-content: end
+                - color: rgb(170,171,175) !important;
+            name:
+                - color: rgb(170,171,175)
+                - font-weight: 400 !important;
+                - font-family: "LatoWeb"
+                - opacity: 1 !important;
+                - text-align: start
+            custom_fields:
+                range:
+                    - align-self: middle
+                    - justify-self: start
+                note:
+                    - align-self: middle;
+                    - justify-self: start;
+                    - opacity: 1 !important;
+                    - font-size: 13px
+                    - font-weight: 300
+            icon:
+                - width: 50%;
+                - color: rgb(170,171,175) !important;
+          custom_fields:
+           # [[[ return `${states['sensor.kia_range'].state} <span>km / </span>${states['sensor.kia_soc'].state} <span>%</span>` ]]]
+            range: >
+                [[[ return `${states['sensor.kia_range'].state} <span>km` ]]]
+            note: >
+                [[[ 
+                    if (states['binary_sensor.kia_charging'].state == 'on')
+                        return `Remaining ${Math.round(states['sensor.kia_time'].state / 60 * 100) / 100} u`
+                ]]]
+          style: |
+            ha-card, :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+            }
+            ha-card{
+                padding: 15px;
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .icon, #img-cell{
+                margin-right: 0px !important;
+                color: rgb(170,171,175) !important;
+                --mdc-icon-size: 20px;
+                height: 20px !important;
+                width: 20px !important;
+                margin-left: -25px !important;
+            }
+            #name {
+                margin-left: -120px !important;
+                font-size: 13px !important;
+            }
+            #container{
+                margin: -10px 0;
+            }
+            #range {
+                margin-top: -40px;
+                padding-left: 15px;
+                font-size: 24px;
+                color: #213953;
+            }
+            #range span{
+                color: rgb(117,125,135) !important;
+                font-size: 14px !important;
+                opacity: 1 !important;
+            }
+        - type: 'custom:mini-media-player'
+          noPadding: true
+          entity: media_player.sonos
+          artwork: cover
+          icon: mdi:play
+          view_layout:
+            grid-column: 5
+            grid-row: 3
+          hide:
+            icon: true
+            volume: true
+            power: true
+            prev: true
+            next: true
+            source: false
+            controls: false
+            mute: false
+          style: |
+            :host{
+                font-family: "LatoWeb";
+                background-color: rgba(255, 255, 255, 1) !important;
+                --mini-media-player-base-color: #213953;
+                --mini-media-player-overlay-base-color: #213953;
+                --mini-media-player-overlay-accent-color: #213953;
+            }
+            ha-card{
+                height: 100%;
+                padding: 15px;
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                border-radius: 3px !important;
+                box-shadow: none !important;
+                transition: width ease-in-out 0.5s,height ease-in-out 0.5s,border ease-in-out 0.2s,transform ease-in-out 0.2s !important;
+            }
+            .ratio {
+                padding-bottom: 70%!important;
+            }
+            .title-controls { 
+                width: 100%; 
+                height: 100%; 
+            }
+            ha-card.--has-artwork .cover{
+                opacity: 0.3 !important;
+                filter: grayscale(80%);
+            }
+            ha-icon-button{
+                color: #333 !important;
+            }
+            .mmp__bg{
+                -webkit-filter: invert(1);
+                filter: invert(1);
+            }
+            .entity__info__name{
+                color: rgb(117,125,135) !important;
+                font-weight: 400 !important;
+                font-size: 16px !important;
+            }
+  - panel: true
+    icon: mdi:doorbell-video
+    path: "doorbell"
+    cards:
+      - aspect_ratio: 100%
+        camera_image: camera.la_frontdoor
+        camera_view: live
+        entity: camera.la_frontdoor
+        hold_action:
+          action: none
+        show_name: false
+        show_state: false
+        tap_action:
+          action: none
+        type: picture-entity
