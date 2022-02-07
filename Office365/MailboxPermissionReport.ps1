@@ -35,16 +35,25 @@
 
   Don't get the full displayname for each permissions (to speed up the script)
 
+ .EXAMPLE
+  .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -displayNames:$false
+
+  Using CSV file with list of users to get permissions from. Use the following format:
+  UserPrincipalName,Display Name
+  AdeleV@contoso.onmicrosoft.com,Adele Vance
+  GradyA@contoso.onmicrosoft.com,Grady Archie
+
+
 .EXAMPLE
   MailboxPermissionReport.ps1 -adminUPN johndoe@contoso.com -path c:\temp\report.csv
 
   Store CSV report in c:\temp\report.csv
 
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  30-11-2021
-  Purpose/Change: init
+  Purpose/Change: Add CSV Import method
   Link:           https://lazyadmin.nl/powershell/get-mailbox-permissions-with-powershell/
 #>
 
@@ -79,6 +88,12 @@ param(
     HelpMessage = "Show display names"
   )]
   [switch]$displayNames = $true,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = "Enter path to CSV"
+  )]
+  [string]$csvFile,
 
   [Parameter(
     Mandatory = $false,
@@ -353,7 +368,21 @@ Function Get-AllMailboxPermissions {
         Write-Host "- Get mailbox $user" -ForegroundColor Cyan
         $mailboxes += Get-SingleUser -identity $user
       }
+    }elseif ($csvFile) {
       
+      Write-Host "Using CSV file" -ForegroundColor Cyan
+      $mailboxes = @()
+
+      # Test CSV file path
+      if (Test-Path $csvFile) {
+        # Read CSV File
+        Import-Csv $csvFile | ForEach {
+          Write-Host "- Get mailbox $($_.UserPrincipalName)" -ForegroundColor Cyan
+          $mailboxes += Get-SingleUser -identity $_.UserPrincipalName
+        }
+      }else{
+        Write-Host "Unable to find CSV file $csvFile" -ForegroundColor black -BackgroundColor Yellow
+      }
     }else{
       Write-Host "Collecting mailboxes" -ForegroundColor Cyan
       $mailboxes = Get-Mailboxes
