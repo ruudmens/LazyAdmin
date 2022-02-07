@@ -36,7 +36,7 @@
   Don't get the full displayname for each permissions (to speed up the script)
 
  .EXAMPLE
-  .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -displayNames:$false
+  .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -csvFile "c:\temp\mailboxusers.csv"
 
   Using CSV file with list of users to get permissions from. Use the following format:
   UserPrincipalName,Display Name
