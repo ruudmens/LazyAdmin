@@ -110,15 +110,9 @@ Function Get-Users {
 
 
 Function Get-AllADUsers {
-    <#
+  <#
     .SYNOPSIS
-      Get all the permissions of each mailbox
-        
-      Permission are spread into 4 parts.
-      - Read and Manage permission
-      - Send as Permission
-      - Send on behalf of permission
-      - Folder permissions (inbox and calendar set by the user self)
+      Get all AD users
   #>
   process {
     Write-Host "Collecting users" -ForegroundColor Cyan
