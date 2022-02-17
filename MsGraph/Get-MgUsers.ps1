@@ -84,7 +84,7 @@ Function Get-Users {
       If (($getManager.IsPresent)) {
         # Adding additional properties for the manager
         $select = $properties += @{Name = 'Manager'; Expression = {$_.Manager.AdditionalProperties.displayName}}
-        $select += @{Name ="IPAddress"; Expression = {$_.BusinessPhones}} 
+        $select += @{Name ="Phone"; Expression = {$_.BusinessPhones}} 
       }else{
         $select = $properties
       }
@@ -122,7 +122,7 @@ Function Get-AllMgUsers {
         "Manager" = $_.Manager
         "Department" = $_.Department
         "Office" = $_.OfficeLocation
-        "Phone" = $_.IPAddress
+        "Phone" = $_.Phone
         "Mobile" = $_.MobilePhone
         "Enabled" = if ($_.AccountEnabled) {"enabled"} else {"disabled"}
         "Street" = $_.StreetAddress
@@ -139,7 +139,7 @@ Function Get-AllMgUsers {
 # Check if MS Graph module is installed
 if (Get-InstalledModule Microsoft.Graph) {
   # Connect to MS Graph
-  Connect-MgGraph -Scopes "User.Read.All","Group.ReadWrite.All"
+  Connect-MgGraph -Scopes "User.Read.All"
 }else{
   Write-Host "Microsoft Graph module not found - please install it" -ForegroundColor Black -BackgroundColor Yellow
   exit
