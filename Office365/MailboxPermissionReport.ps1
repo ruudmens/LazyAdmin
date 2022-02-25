@@ -99,7 +99,7 @@ param(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\MailboxPermissionReport-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
+  [string]$path = ".\MailboxPermissionReport-$((Get-Date -format "MM-dd-yyyy").ToString()).csv"
 )
 
 
@@ -375,6 +375,7 @@ Function Get-AllMailboxPermissions {
 
       # Test CSV file path
       if (Test-Path $csvFile) {
+
         # Read CSV File
         Import-Csv $csvFile | ForEach {
           Write-Host "- Get mailbox $($_.UserPrincipalName)" -ForegroundColor Cyan
