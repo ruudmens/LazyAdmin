@@ -92,13 +92,13 @@ Function Get-Users {
       # Get enabled, disabled or both users
       switch ($enabled)
       {
-        "true" {$filter = 'AccountEnabled eq true'}
-        "false" {$filter = 'AccountEnabled eq false'}
-        "both" {$filter = ''}
+        "true" {$filter = "AccountEnabled eq true and UserType eq 'member'"}
+        "false" {$filter = "AccountEnabled eq false and UserType eq 'member'"}
+        "both" {$filter = "UserType eq 'member'"}
       }
 
       # Get the users
-      Get-MgUser -Filter $filter -Property $properties -ExpandProperty Manager | select $select
+      Get-MgUser -Filter $filter -Property $properties -All -ExpandProperty Manager | select $select
     }
 }
 
