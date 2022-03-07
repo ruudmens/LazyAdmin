@@ -10,10 +10,10 @@
   List of recipient with mail addresses
 
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens
   Creation Date:  14 feb 2022
-  Purpose/Change: Initial script development
+  Purpose/Change: Added dynamic distribution lists
 
 .EXAMPLE
   Seach for a specific email address
@@ -117,6 +117,17 @@ Function Search-Groups {
   }
 }
 
+Function Search-DynamicDistributionlists {
+  <#
+  .SYNOPSIS
+    Search for email address in the distributionlists
+  #>
+  process {
+    Write-Host "Searching in dynamic distributionlists for $emailAddress" -ForegroundColor Cyan
+    Get-DynamicDistributionGroup -Filter "EmailAddresses -like '*$emailAddress*'"
+  }
+}
+
 Function Find-EmailAddress{
   <#
     .SYNOPSIS
@@ -128,6 +139,7 @@ Function Find-EmailAddress{
     $result += Search-Mailboxes
     $result += Search-Distributionlists
     $result += Search-Groups
+    $result += Search-DynamicDistributionlists
 
     $result | ForEach {
         [pscustomobject]@{
