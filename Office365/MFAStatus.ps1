@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.5
+  Version: 1.6
   DateCreated: jan 2021
-  Purpose/Change: Typo
+  Purpose/Change: Added registered email and phonenumber
 	Thanks to: Anthony Bartolo
 
 .LINK
@@ -163,6 +163,8 @@ if ($PSBoundParameters.ContainsKey('UserPrincipalName')) {
         MFAEnabled        = if ($MsolUser.StrongAuthenticationMethods) {$true} else {$false}
         MFAType           = $Method
 				MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
+        "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
+        "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
       }
     }
 		catch {
@@ -202,6 +204,8 @@ elseif ($adminsOnly) {
       "Phone call verification" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "TwoWayVoiceMobile") {$true} else {"-"}
       "Hardware token or authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppOTP") {$true} else {"-"}
       "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
+      "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
+      "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
 			MFAEnforced = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
     }
   }
@@ -234,6 +238,8 @@ else {
             MFAEnabled        = $false
             MFAType           = "-"
 						MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
+            "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
+            "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
           }
         }
       }else{
@@ -247,6 +253,8 @@ else {
           "Phone call verification" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "TwoWayVoiceMobile") {$true} else {"-"}
           "Hardware token or authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppOTP") {$true} else {"-"}
           "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
+          "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
+          "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
 					MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
         }
       }
