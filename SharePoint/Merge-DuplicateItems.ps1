@@ -72,7 +72,7 @@ Function Get-PnpFolderItemRecursively($FolderSiteRelativeUrl) {
             {
          
                 # Duplicate folder found
-                Write-Host " - Duplicatie folder found: " $itemPath -ForegroundColor Yellow
+                Write-Host " - Duplicate folder found: " $itemPath -ForegroundColor Yellow
             
                 # Move content folder folder to the original location
                 Move-FolderItemsRecursively($itemPath)
