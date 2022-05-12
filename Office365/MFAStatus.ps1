@@ -123,7 +123,10 @@ if ((Get-Module -ListAvailable -Name MSOnline) -ne $null)
 {
   if(-not (Get-MsolDomain -ErrorAction SilentlyContinue))
   {
-	  Connect-MsolService
+    if ($Host.Version.Major -eq 7) {
+      Import-Module MSOnline -UseWindowsPowershell
+    }
+    Connect-MsolService
   }
 }
 else{
