@@ -11,7 +11,7 @@
   Generate the onedrive size report and stores the csv file in the script root location.
 
 .EXAMPLE
-  Get-OneDriveSizeReport.ps1 url "https://contoso-admin.sharepoint.com" -path c:\temp\reportoneDrive.csv
+  Get-OneDriveSizeReport.ps1 -url "https://contoso-admin.sharepoint.com" -path c:\temp\reportoneDrive.csv
 
   Store CSV report in c:\temp\reportoneDrive.csv
 
