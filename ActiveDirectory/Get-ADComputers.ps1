@@ -113,7 +113,7 @@ Function Get-AllADComputers {
        # Get distinguishedName of the domain
        $dn = Get-ADDomain | Select -ExpandProperty DistinguishedName
        Write-Host "- Get computers in $dn" -ForegroundColor Cyan
-       $uscomputersers += Get-Computers -dn $dn
+       $computers += Get-Computers -dn $dn
      }
  
 
