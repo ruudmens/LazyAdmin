@@ -1,6 +1,6 @@
 <#
 .Synopsis
-  Get the MFA status for all users or a single user.
+  Get the MFA status for all users or a single user with Microsoft Graph
 
 .DESCRIPTION
   This script will get the Azure MFA Status for your users. You can query all the users, admins only or a single user.
@@ -11,7 +11,7 @@
         Hardwaretoken is not yet supported
 
 .NOTES
-  Name: Get-MFAStatus
+  Name: Get-MgMFAStatus
   Author: R. Mens - LazyAdmin.nl
   Version: 1.0
   DateCreated: Jun 2022
@@ -41,13 +41,13 @@
   Get the MFA Status of the admins only
 
 .EXAMPLE
-  Get-MsolUser -Country "NL" | ForEach-Object { Get-MFAStatus -UserPrincipalName $_.UserPrincipalName }
+  Get-MgUser -Filter "country eq 'Netherlands'" | ForEach-Object { Get-MgMFAStatus -UserPrincipalName $_.UserPrincipalName }
 
   Get the MFA status for all users in the Country The Netherlands. You can use a similar approach to run this
   for a department only.
 
 .EXAMPLE
-  Get-MgMFAStatus -withOutMFAOnly | Export-CSV c:\temp\userwithoutmfa.csv -noTypeInformation
+  Get-MgMFAStatus -withOutMFAOnly| Export-CSV c:\temp\userwithoutmfa.csv -noTypeInformation
 
   Get all users without MFA and export them to a CSV file
 #>
@@ -69,14 +69,6 @@ param(
   )]
   # Get only the users that are an admin
   [switch]$adminsOnly = $false,
-
-  [Parameter(
-    Mandatory         = $false,
-    ValueFromPipeline = $false,
-    ParameterSetName  = "AllUsers"
-  )]
-  # Set the Max results to return
-  [int]$MaxResults = 10000,
 
   [Parameter(
     Mandatory         = $false,
@@ -109,23 +101,6 @@ param(
   [string]$path = ".\MFAStatus-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
 )
 
-Function Get-Admins{
-    <#
-  .SYNOPSIS
-    Get all user with an Admin role
-  #>
-  process{
-    $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
-                %{$role = $_.displayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
-                  where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
-                  % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
-                } | 
-                Select @{Name="Role"; Expression = {$role}}, DisplayName, UserPrincipalName, Mail, ObjectId | Sort-Object -Property Mail -Unique
-    
-    return $admins
-  }
-}
-
 Function ConnectTo-MgGraph {
   # Check if MS Graph module is installed
   if (-not(Get-InstalledModule Microsoft.Graph)) { 
@@ -141,10 +116,28 @@ Function ConnectTo-MgGraph {
   }
 
   # Connect to Graph
+  Write-Host "Connecting to Microsoft Graph" -ForegroundColor Cyan
   Connect-MgGraph -Scopes "User.Read.All, UserAuthenticationMethod.Read.All"
 
   # Select the beta profile
   Select-MgProfile Beta
+}
+
+Function Get-Admins{
+  <#
+.SYNOPSIS
+  Get all user with an Admin role
+#>
+process{
+  $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
+              %{$role = $_.displayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
+                where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
+                % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
+              } | 
+              Select @{Name="Role"; Expression = {$role}}, DisplayName, UserPrincipalName, Mail, ObjectId | Sort-Object -Property Mail -Unique
+  
+  return $admins
+}
 }
 
 Function Get-Users {
@@ -154,12 +147,14 @@ Function Get-Users {
   #>
   process{
     # Set the properties to retrieve
-    $properties = @(
+    $select = @(
       'id',
       'DisplayName',
       'userprincipalname',
       'mail'
     )
+
+    $properties = $select + "AssignedLicenses"
 
     # Get enabled, disabled or both users
     switch ($enabled)
@@ -168,10 +163,44 @@ Function Get-Users {
       "false" {$filter = "AccountEnabled eq false and UserType eq 'member'"}
       "both" {$filter = "UserType eq 'member'"}
     }
+    
+    # Check if UserPrincipalName(s) are given
+    if ($UserPrincipalName) {
+      Write-host "Get users by name" -ForegroundColor Cyan
 
-    # Get the users
-    #Get-MgUser -Filter $filter -Property $properties -All -ExpandProperty Manager | select $select
-    Get-MgUser -userid "rudymens@thunnissen.nl" -Property $properties | select $select
+      $users = @()
+      foreach ($user in $UserPrincipalName) 
+      {
+        try {
+          $users += Get-MgUser -UserId $user -Property $properties | select $select -ErrorAction Stop
+        }
+        catch {
+          [PSCustomObject]@{
+            DisplayName       = " - Not found"
+            UserPrincipalName = $User
+            isAdmin           = $null
+            MFAEnabled        = $null
+          }
+        }
+      }
+    }elseif($adminsOnly)
+    {
+      Write-host "Get admins only" -ForegroundColor Cyan
+
+      $users = @()
+      foreach ($admin in $admins) {
+        $users += Get-MgUser -UserId $admin.UserPrincipalName -Property $properties | select $select
+      }
+    }else
+    {
+      if ($IsLicensed) {
+        # Get only licensed users
+        $users = Get-MgUser -Filter $filter -Property $properties -all | Where-Object {($_.AssignedLicenses).count -gt 0} | select $select
+      }else{
+        $users = Get-MgUser -Filter $filter -Property $properties -all | select $select
+      }
+    }
+    return $users
   }
 }
 
@@ -248,7 +277,7 @@ Function Get-MFAMethods {
           "#microsoft.graph.passwordlessMicrosoftAuthenticatorAuthenticationMethod" { 
             # Passwordless
             $mfaMethods.passwordLess = $true
-            $passwordLessDetails = $MfaMethod.AdditionalProperties["displayName"]
+            $passwordLessDetails = $method.AdditionalProperties["displayName"]
             $mfaMethods.status = "enabled"
           }
           "#microsoft.graph.softwareOathAuthenticationMethod" { 
@@ -270,26 +299,46 @@ Function Get-MFAStatusUsers {
   process {
     Write-Host "Collecting users" -ForegroundColor Cyan
     
+    # Collect users
+    $users = Get-Users
+    
+    Write-Host "Processing" $users.count "users" -ForegroundColor Cyan
+
     # Collect and loop through all users
-    Get-Users | ForEach {
+    $users | ForEach {
+      
       $mfaMethods = Get-MFAMethods -userId $_.id
 
-      [pscustomobject]@{
-        "Display Name" = $_.DisplayName
-        Emailaddress = $_.mail
-        UserPrincipalName = $_.UserPrincipalName
-        isAdmin = if ($listAdmins -and ($admins.UserPrincipalName -match $_.UserPrincipalName)) {$true} else {"-"}
-        "MFA Status" = $mfaMethods.status
-      # "MFA Default type" = ""  - Not yet supported by MgGraph
-        "Phone Authentication" = $mfaMethods.phoneAuth
-        "Authenticator App" = $mfaMethods.authApp
-        "Passwordless" = $mfaMethods.passwordLess
-        "Hello for Business" = $mfaMethods.helloForBusiness
-        "FIDO2 Security Key" = $mfaMethods.fido
-        "Temporary Access Pass" = $mfaMethods.tempPass
-        "Authenticator device" = $mfaMethods.authDevice
-        "Phone number" = $mfaMethods.authPhoneNr
-        "Email for SSPR" = $mfaMethods.emailAuth
+      if ($withOutMFAOnly) {
+        if ($mfaMethods.status -eq "disabled") {
+          [PSCustomObject]@{
+            "Name" = $_.DisplayName
+            Emailaddress = $_.mail
+            UserPrincipalName = $_.UserPrincipalName
+            isAdmin = if ($listAdmins -and ($admins.UserPrincipalName -match $_.UserPrincipalName)) {$true} else {"-"}
+            MFAEnabled        = $false
+            "Phone number" = $mfaMethods.authPhoneNr
+            "Email for SSPR" = $mfaMethods.emailAuth
+          }
+        }
+      }else{
+        [pscustomobject]@{
+          "Name" = $_.DisplayName
+          Emailaddress = $_.mail
+          UserPrincipalName = $_.UserPrincipalName
+          isAdmin = if ($listAdmins -and ($admins.UserPrincipalName -match $_.UserPrincipalName)) {$true} else {"-"}
+          "MFA Status" = $mfaMethods.status
+        # "MFA Default type" = ""  - Not yet supported by MgGraph
+          "Phone Authentication" = $mfaMethods.phoneAuth
+          "Authenticator App" = $mfaMethods.authApp
+          "Passwordless" = $mfaMethods.passwordLess
+          "Hello for Business" = $mfaMethods.helloForBusiness
+          "FIDO2 Security Key" = $mfaMethods.fido
+          "Temporary Access Pass" = $mfaMethods.tempPass
+          "Authenticator device" = $mfaMethods.authDevice
+          "Phone number" = $mfaMethods.authPhoneNr
+          "Email for SSPR" = $mfaMethods.emailAuth
+        }
       }
     }
   }
@@ -300,7 +349,7 @@ ConnectTo-MgGraph
 
 # Get Admins
 # Get all users with admin role
-$admin = $null
+$admins = $null
 
 if (($listAdmins) -or ($adminsOnly)) {
   $admins = Get-Admins
