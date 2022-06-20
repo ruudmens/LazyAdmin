@@ -125,19 +125,19 @@ Function ConnectTo-MgGraph {
 
 Function Get-Admins{
   <#
-.SYNOPSIS
-  Get all user with an Admin role
-#>
-process{
-  $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
-              %{$role = $_.displayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
-                where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
-                % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
-              } | 
-              Select @{Name="Role"; Expression = {$role}}, DisplayName, UserPrincipalName, Mail, ObjectId | Sort-Object -Property Mail -Unique
-  
-  return $admins
-}
+  .SYNOPSIS
+    Get all user with an Admin role
+  #>
+  process{
+    $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
+                %{$role = $_.displayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
+                  where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
+                  % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
+                } | 
+                Select @{Name="Role"; Expression = {$role}}, DisplayName, UserPrincipalName, Mail, ObjectId | Sort-Object -Property Mail -Unique
+    
+    return $admins
+  }
 }
 
 Function Get-Users {
@@ -229,6 +229,7 @@ Function Get-MFAMethods {
       softwareAuth      = "-"
       authDevice        = "-"
       authPhoneNr       = "-"
+      SSPREmail         = "-"
     }
 
     ForEach ($method in $mfaData) {
@@ -265,7 +266,7 @@ Function Get-MFAMethods {
           "#microsoft.graph.emailAuthenticationMethod"                   { 
             # Email Authentication
             $mfaMethods.emailAuth =  $true
-            $emailAuthDetails = $method.AdditionalProperties["emailAddress"] 
+            $mfaMethods.SSPREmail = $method.AdditionalProperties["emailAddress"] 
             $mfaMethods.status = "enabled"
           }               
           "microsoft.graph.temporaryAccessPassAuthenticationMethod"    { 
@@ -318,7 +319,7 @@ Function Get-MFAStatusUsers {
             isAdmin = if ($listAdmins -and ($admins.UserPrincipalName -match $_.UserPrincipalName)) {$true} else {"-"}
             MFAEnabled        = $false
             "Phone number" = $mfaMethods.authPhoneNr
-            "Email for SSPR" = $mfaMethods.emailAuth
+            "Email for SSPR" = $mfaMethods.SSPREmail
           }
         }
       }else{
@@ -337,7 +338,7 @@ Function Get-MFAStatusUsers {
           "Temporary Access Pass" = $mfaMethods.tempPass
           "Authenticator device" = $mfaMethods.authDevice
           "Phone number" = $mfaMethods.authPhoneNr
-          "Email for SSPR" = $mfaMethods.emailAuth
+          "Email for SSPR" = $mfaMethods.SSPREmail
         }
       }
     }
