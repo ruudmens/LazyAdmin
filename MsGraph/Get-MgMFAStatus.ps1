@@ -13,9 +13,9 @@
 .NOTES
   Name: Get-MgMFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.0
+  Version: 1.1
   DateCreated: Jun 2022
-  Purpose/Change: Init
+  Purpose/Change: Add Directory.Read.All scope
 
 .LINK
   https://lazyadmin.nl
@@ -117,7 +117,7 @@ Function ConnectTo-MgGraph {
 
   # Connect to Graph
   Write-Host "Connecting to Microsoft Graph" -ForegroundColor Cyan
-  Connect-MgGraph -Scopes "User.Read.All, UserAuthenticationMethod.Read.All"
+  Connect-MgGraph -Scopes "User.Read.All, UserAuthenticationMethod.Read.All, Directory.Read.All"
 
   # Select the beta profile
   Select-MgProfile Beta
