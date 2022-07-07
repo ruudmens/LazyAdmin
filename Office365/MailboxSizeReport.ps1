@@ -75,9 +75,9 @@ Function ConnectTo-EXO {
   
   process {
     # Check if EXO is installed and connect if no connection exists
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -eq $null)
+    if ($null -eq (Get-Module -ListAvailable -Name ExchangeOnlineManagement))
     {
-      Write-Host "Exchange Online PowerShell v2 module is requied, do you want to install it?" -ForegroundColor Yellow
+      Write-Host "Exchange Online PowerShell v2 module is required, do you want to install it?" -ForegroundColor Yellow
       
       $install = Read-Host Do you want to install module? [Y] Yes [N] No 
       if($install -match "[yY]") 
@@ -92,7 +92,7 @@ Function ConnectTo-EXO {
     }
 
 
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -ne $null) 
+    if ($null -ne (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) 
     {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name
@@ -120,7 +120,7 @@ Function Get-Mailboxes {
     }
 
     Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
   }
 }
 
@@ -160,20 +160,20 @@ Function Get-MailboxStats {
     $mailboxes = Get-Mailboxes
     $i = 0
 
-    $mailboxes | ForEach {
+    $mailboxes | ForEach-Object {
 
       # Get mailbox size     
-      $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
+      $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select-Object TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
 
-      if ($mailboxSize -ne $null) {
+      if ($null -ne $mailboxSize) {
       
         # Get archive size if it exists and is requested
         $archiveSize = 0
         $archiveResult = $null
 
-        if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
-          $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
-          if ($archiveResult -ne $null) {
+        if ($archive.IsPresent -and ($null -ne $_.ArchiveDatabase)) {
+          $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select-Object ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
+          if ($null -ne $archiveResult) {
             $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
           }else{
             $archiveSize = 0
