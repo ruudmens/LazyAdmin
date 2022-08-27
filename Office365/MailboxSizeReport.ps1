@@ -34,6 +34,12 @@
 
 param(
   [Parameter(
+    Mandatory = $true,
+    HelpMessage = "Enter the Exchange Online or Global admin username"
+  )]
+  [string]$adminUPN,
+
+  [Parameter(
     Mandatory = $false,
     HelpMessage = "Get (only) Shared Mailboxes or not. Default include them"
   )]
