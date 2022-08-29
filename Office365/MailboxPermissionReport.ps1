@@ -391,6 +391,7 @@ Function Get-AllMailboxPermissions {
     
     $i = 0
     Write-Host "Collecting permissions" -ForegroundColor Cyan
+    $mailboxesqty=$mailboxes.Count
     $mailboxes | ForEach {
      
       # Get Send on Behalf Permissions
@@ -473,7 +474,7 @@ Function Get-AllMailboxPermissions {
 
             $currentUser = $_.DisplayName
             if ($mailboxes.Count -gt 1) {
-              Write-Progress -Activity "Collecting mailbox permissions" -Status "Current Count: $i" -PercentComplete (($i / $mailboxes.Count) * 100) -CurrentOperation "Processing mailbox: $currentUser"
+              Write-Progress -Activity "Collecting mailbox permissions" -Status "Current count: $i of $mailboxesqty" -PercentComplete (($i / $mailboxes.Count) * 100) -CurrentOperation "Processing mailbox: $currentUser"
             }
           }
           while($x -ne $mostRecords)
@@ -486,7 +487,7 @@ Function Get-AllMailboxPermissions {
 # Connect to Exchange Online
 ConnectTo-EXO
 
-Get-AllMailboxPermissions | Export-CSV -Path $path -NoTypeInformation
+Get-AllMailboxPermissions | Export-CSV -Path $path -NoTypeInformation -encoding utf8
 
 if ((Get-Item $path).Length -gt 0) {
   Write-Host "Report finished and saved in $path" -ForegroundColor Green
