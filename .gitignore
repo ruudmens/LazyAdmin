@@ -1,0 +1,34 @@
+Office365/MFAEnabledNotification.html
+Office365/Test-SMTP.ps1
+StaffOffboarding/MailTemplateUserRemovedtoAdmin.html
+StaffOffboarding/MailTemplateUserRemovedtoAdmin.html
+# Personal stuff to ignore
+Office/azcopy.exe
+*.exe
+*.csv
+MijnKia.ini
+MijnKia.py
+yoursecret.xml
+Encrypted.txt
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+.vs/scripts/FileContentIndex/5f2831b6-25ba-426d-90a4-551885483e59.vsidx
+.vs/scripts/FileContentIndex/read.lock
+.vs/scripts/v16/.suo
+.vs/scripts/v17/.suo
+.vscode/settings.json
+.vs/slnx.sqlite
+.vs/slnx.sqlite
+Google/accessToken.txt
+Google/Campagnes.ps1
+Google/GoogleAds.ps1
+Google/refreshToken.txt
+PowerShellBasics/SelectString.ps1
+PowerShellBasics/TryCatchBlocksExample2.ps1
+Home Assistant/TileBoard.conf
+Home Assistant/Tileboard.css
+Home Assistant/back-lovelace.yaml
+Home Assistant/backup/ui-lovelace.yaml
+.vs/slnx.sqlite
+.vs/slnx.sqlite

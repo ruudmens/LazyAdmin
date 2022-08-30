@@ -1,36 +1,30 @@
 <#
 .SYNOPSIS
   Get all AD Users with properties and export to CSV
-
 .DESCRIPTION
   This script collects all Active Directory users with the most important properties. By default it will only
   get the enabled users, manager of the user and searches the whole domain.
-
 .OUTPUTS
   CSV with Active Direct
-
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens
   Creation Date:  12 feb 2022
-  Purpose/Change: Initial script development
-
+  Purpose/Change: Fix enabled / disabled status
+                  Default output is to console
 .EXAMPLE
   Get all AD users from the whole Domain
-
+   .\Get-ADusers.ps1 | ft
+.EXAMPLE
+  Get all AD users from the whole Domain and export it to CSV
    .\Get-ADusers.ps1 -path c:\temp\users.csv
-
 .EXAMPLE
   Get enabled and disabled users
-
    .\Get-ADusers.ps1 -enabled both -path c:\temp\users.csv
-
    Other options are : true or false
-
 .EXAMPLE
   Don't lookup the managers display name
   .\Get-ADusers.ps1 -getManager:$false -path c:\temp\users.csv
-
 .EXAMPLE
   Specify OU to look up into
   .\Get-ADusers.ps1 -searchBase "OU=users,OU=Amsterdam,DC=LazyAdmin,DC=Local" -path c:\temp\users.csv
@@ -60,7 +54,7 @@ param(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\ADUsers-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
+  [string]$CSVpath
 )
 
 Function Get-Users {
@@ -81,6 +75,7 @@ Function Get-Users {
         'userprincipalname',
         'mail',
         'title',
+        'enabled',
         'manager',
         'department',
         'telephoneNumber',
@@ -150,7 +145,7 @@ Function Get-AllADUsers {
         "Office" = $_.Office
         "Phone" = $_.telephoneNumber
         "Mobile" = $_.mobile
-        "Enabled" = if ($_.Enabled) {"enabled"} else {"disabled"}
+        "Enabled" = $_.enabled
         "Street" = $_.StreetAddress
         "City" = $_.City
         "Postal code" = $_.PostalCode
@@ -163,14 +158,19 @@ Function Get-AllADUsers {
   }
 }
 
-Get-AllADUsers | Sort-Object Name | Export-CSV -Path $path -NoTypeInformation
+If ($CSVpath) {
+  # Get mailbox status
+  Get-AllADUsers | Sort-Object Name | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
+  if ((Get-Item $CSVpath).Length -gt 0) {
+      Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
 
-if ((Get-Item $path).Length -gt 0) {
-  Write-Host "Report finished and saved in $path" -ForegroundColor Green
-
-  # Open the CSV file
-  Invoke-Item $path
-
-}else{
-  Write-Host "Failed to create report" -ForegroundColor Red
+      # Open the CSV file
+      Invoke-Item $path
+  } 
+  else {
+      Write-Host "Failed to create report" -ForegroundColor Red
+  }
+}
+Else {
+  Get-AllADUsers | Sort-Object Name 
 }
