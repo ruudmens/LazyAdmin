@@ -1,0 +1,22 @@
+frontend:
+  themes:
+    tablet:
+
+      card-mod-theme: tablet
+
+      card-mod-root: |
+        ha-app-layout {
+          background-color: rgb(246, 247, 251)
+        }
+
+      card-mod-card: |
+        button.height-halft {
+          background: url('/local/background.png');
+          background-size: cover;
+        }
+
+      homekit-button: |
+        button.height-halft {
+          background: url('/local/background.png');
+          background-size: cover;
+        }

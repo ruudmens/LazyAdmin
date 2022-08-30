@@ -1,0 +1,30 @@
+- id: show_camera_when_doorbell_pressed
+  alias: Show Doorbell camera
+  hide_entity: false
+  initial_state: 'true'
+  trigger:
+    platform: mqtt
+    topic: "home/doorbell"
+    # Optional
+    payload: "true"
+    encoding: "utf-8"
+  action:
+    - service: browser_mod.navigate
+      data:
+        navigation_path: /lovelace/doorbell
+        deviceId: dashboard
+- id: stop_doorbell_camera
+  alias: Stop Doorbell camera
+  hide_entity: false
+  initial_state: 'true'
+  trigger:
+    platform: mqtt
+    topic: "home/doorbell"
+    # Optional
+    payload: "false"
+    encoding: "utf-8"
+  action:
+    - service: browser_mod.navigate
+      data:
+        navigation_path: /lovelace/0
+        deviceId: dashboard
