@@ -17,17 +17,17 @@
    .\Get-ADusers.ps1 | ft
 .EXAMPLE
   Get all AD users from the whole Domain and export it to CSV
-   .\Get-ADusers.ps1 -path c:\temp\users.csv
+   .\Get-ADusers.ps1 -csvpath c:\temp\users.csv
 .EXAMPLE
   Get enabled and disabled users
-   .\Get-ADusers.ps1 -enabled both -path c:\temp\users.csv
+   .\Get-ADusers.ps1 -enabled both -csvpath c:\temp\users.csv
    Other options are : true or false
 .EXAMPLE
   Don't lookup the managers display name
-  .\Get-ADusers.ps1 -getManager:$false -path c:\temp\users.csv
+  .\Get-ADusers.ps1 -getManager:$false -csvpath c:\temp\users.csv
 .EXAMPLE
   Specify OU to look up into
-  .\Get-ADusers.ps1 -searchBase "OU=users,OU=Amsterdam,DC=LazyAdmin,DC=Local" -path c:\temp\users.csv
+  .\Get-ADusers.ps1 -searchBase "OU=users,OU=Amsterdam,DC=LazyAdmin,DC=Local" -csvpath c:\temp\users.csv
 #>
 
 param(
