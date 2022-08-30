@@ -34,7 +34,7 @@ if ((Get-Module -ListAvailable -Name ActiveDirectory) -eq $null)
 	Write-Error "Please install RSAT Tools for your client."
 }
 
-#Import the sessions
+# Check if EXO is installed and connect if no connection exists
 if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -ne $null) 
 {
 	# Check if there is a active EXO sessions
@@ -47,16 +47,37 @@ else{
 	Write-Error "Please install EXO v2 module."
 }
 
+# Check if MSonline is installed and conect if no connection exists
 if ((Get-Module -ListAvailable -Name MSOnline) -ne $null) 
 {
 	# Check if we already have a connection to Msol
 	if(-not (Get-MsolDomain -ErrorAction SilentlyContinue))
 	{
+		if ($Host.Version.Major -eq 7) {
+			Import-Module MSOnline -UseWindowsPowershell
+			Connect-MsolService
+		}else{
 		Connect-MsolService
+		}
 	}
 }else{
 	Write-Error "Please install MSOL Services."
 }
+
+# Check if SPOService is installed and connect if no connection exists
+if ((Get-Module -ListAvailable -Name Microsoft.Online.SharePoint.PowerShell) -ne $null) 
+{
+	# Check if we already have a connection to SPO
+	Try { 
+		Get-SPOSite $config.settings.sharePointAdminURL
+	}
+	Catch
+	{
+		Connect-SPOService -url $config.settings.sharePointAdminURL
+	}
+}else{
+	Write-Error "Please install SPO Services."
+}	
 
 
 #-----------------------------------------------------------[Functions]------------------------------------------------------------
@@ -272,7 +293,7 @@ Function Get-EmailTemplate
 	PROCESS
 	{
 		#Get the mailtemplate
-		$mailTemplate = (Get-Content ($rootPath + '\' + $config.Settings.$templateName)) | ForEach-Object {
+			$mailTemplate = (Get-Content ($rootPath + '\' + $config.Settings.$templateName)) | ForEach-Object {
 			$_ 	-replace '{{manager.firstname}}', $manager.GivenName `
 			-replace '{{user.fullname}}', $employee.Name `
 			-replace '{{removedLicenses}}', $removedLicenses
@@ -303,7 +324,7 @@ Function Send-MailtoManager
 		{
 			if ($whatIf -ne $true)
 			{
-				send-MailMessage -SmtpServer $config.SMTP.address -To $manager.mail -From $config.SMTP.from -Bcc $config.SMTP.bcc -Subject $subject -Body $emailBody -BodyAsHtml
+				send-MailMessage -SmtpServer $config.SMTP.address -To $manager.mail -From $config.SMTP.from -Subject $subject -Body $emailBody -BodyAsHtml
 			}
 			else
 			{
@@ -348,7 +369,7 @@ Function Send-MailtoAdmin
 		}
 		Catch [System.Object]
 		{
-			Write-Error "Failed to send email to manager, $_"
+			Write-Error "Failed to send email to admin, $_"
 		}
 	}
 }
@@ -402,14 +423,14 @@ Function Remove-O365License
 		$userLicenseDetails = Get-MsolUser -UserPrincipalName $employee.UserPrincipalName | Select-Object Licenses
 
 		#Remove all the Office 365 licenses from this user
-		if ($userLicenseDetails.Count -gt 0) {
+		if ($userLicenseDetails.licenses.Count -gt 0) {
 			Foreach ($license in $userLicenseDetails)
 			{
 				$AccountSkuId = $license.Licenses.AccountSkuId
 				if ($whatIf -ne $true)
 				{
 					#Remove license
-					Set-MsolUserLicense -UserPrincipalName $employee.UserPrincipalName -RemoveLicenses $AccountSkuId
+					Set-MsolUserLicense -UserPrincipalName $employee.UserPrincipalName  -RemoveLicenses $AccountSkuId
 					return $AccountSkuId
 				}
 				else
@@ -417,6 +438,27 @@ Function Remove-O365License
 					Write-Host "Remove license $AccountSkuId"
 				}
 			}
+		}
+	}
+}
+
+Function Revoke-UserSessions
+{
+PARAM(
+		[parameter(Mandatory=$true)]
+		$employee,
+		[parameter(Mandatory=$false)]
+		[bool]$whatIf
+	)
+
+	PROCESS
+	{
+		Try {
+			#	 Signout user of browser, desktop and mobile applications accessing Office 365 resources across all devices
+			Revoke-SPOUserSession -user $employee.UserPrincipalName -WhatIf:$whatIf
+		}
+		Catch {
+			Write-Error "Unable to signout user, $_"
 		}
 	}
 }

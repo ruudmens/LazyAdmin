@@ -40,6 +40,33 @@ $transportRuleName = "Impersonation warning"
 # Get existing transport rule
 $existingTransportRule =  Get-TransportRule | Where-Object {$_.Name -eq $transportRuleName}
 
+$chunks = [System.Collections.ArrayList]::new()
+for ($i = 0; $i -lt $displayNames.Count; $i += 100) {
+    if (($displayNames.Count - $i) -gt 99  ) {
+        $chunks.add($displayNames[$i..($i + 99)])
+    }
+    else {
+        $chunks.add($displayNames[$i..($displayNames.Count - 1)])
+    }
+}
+
+$c = 0;
+foreach ($chunk in $chunks) {
+	Write-Host "Creating Transport Rule" -ForegroundColor Cyan
+
+	# Create new Transport Rule
+	New-TransportRule -Name "$transportRuleName-$C" `
+										-FromScope NotInOrganization `
+										-SentToScope InOrganization `
+										-HeaderMatchesMessageHeader From `
+										-HeaderMatchesPatterns $chunks `
+										-ApplyHtmlDisclaimerLocation Prepend `
+										-ApplyHtmlDisclaimerText $HTMLDisclaimer `
+										-ApplyHtmlDisclaimerFallbackAction Wrap
+
+	Write-Host "Transport rule $c created" -ForegroundColor Green
+}
+
 if ($existingTransportRule) 
 {
 	Write-Host "Update Transport Rule" -ForegroundColor Cyan

@@ -222,13 +222,14 @@ PROCESS
 			$removedLicenses = Remove-O365License -Employee $employeeDetails -WhatIf:$whatIf
 			Write-debug "Remove assigned licenses"
 
-			Revoke-SPOUserSession -User $user -WhatIf:$whatIf
+			Revoke-UserSessions -Employee $employeeDetails -WhatIf:$whatIf
 			Write-debug "Close all users sessions"
 			#endregion
 
 			#region 6. Send notification email to manager
 			if ($sendMailConfirmation) {
 				$emailBody = Get-EmailTemplate -Employee $employeeDetails -Manager $managerDetails -TemplateName 'mailTemplateFile'
+
 				Send-MailtoManager -EmailBody $emailBody -Employee $employeeDetails -Manager $managerDetails -WhatIf:$whatIf
 				Write-debug "Send mail to manager"
 			}
@@ -236,8 +237,8 @@ PROCESS
 
 			#region 7. Send notification email to admin
 			if ($sendMailConfirmation) {
-				$emailBody = Get-EmailTemplate -Employee $employeeDetails -Manager $managerDetails -TemplateName 'mailTemplateFileAdmin'
-				Send-MailtoAdmin -EmailBody $emailBody -Employee $employeeDetails -Manager $managerDetails -RemovedLicenses $removedLicenses -WhatIf:$whatIf
+				$emailBody = Get-EmailTemplate -Employee $employeeDetails -Manager $managerDetails -RemovedLicenses $removedLicenses -TemplateName 'mailTemplateFileAdmin'
+				Send-MailtoAdmin -EmailBody $emailBody -Employee $employeeDetails -Manager $managerDetails  -WhatIf:$whatIf
 				Write-debug "Send mail to admin"
 			}
 			#endregion

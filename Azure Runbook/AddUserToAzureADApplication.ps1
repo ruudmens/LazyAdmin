@@ -38,10 +38,19 @@ $existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servi
 # Get all licensedUsers
 $licensedUsers = Get-AzureADUser -all $true | Where-Object {$_.AssignedLicenses} | Select displayname,objectid
 
+# Or use CSV File
+$csvUsers = Import-Csv -Path C:\temp\azuread.csv
+
+$users = @()
+$csvUsers | ForEach {
+  $name = $_.name
+  $users += Get-AzureADUser -Filter "DisplayName eq '$name'" | select ObjectId
+}
+
 # Compare lists
 $newUsers = $licensedUsers | Where-Object { $_.ObjectId -notin $existingUsers }
 
-ForEach ($user in $newUsers) {
+ForEach ($user in $licensedUsers) {
   Try {
     New-AzureADUserAppRoleAssignment -ObjectId $user.ObjectId -PrincipalId $user.ObjectId -ResourceId $servicePrincipal.ObjectId -Id $servicePrincipal.Approles[0].id -ErrorAction Stop
 

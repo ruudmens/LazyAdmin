@@ -292,6 +292,20 @@ Function Get-MFAMethods {
   }
 }
 
+Function Get-Manager {
+  <#
+    .SYNOPSIS
+      Get the manager users
+  #>
+  param(
+    [Parameter(Mandatory = $true)] $userId
+  )
+  process {
+    $manager = Get-MgUser -UserId $userId -ExpandProperty manager | Select @{Name = 'name'; Expression = {$_.Manager.AdditionalProperties.displayName}}
+    return $manager.name
+  }
+}
+
 Function Get-MFAStatusUsers {
   <#
     .SYNOPSIS
@@ -309,6 +323,7 @@ Function Get-MFAStatusUsers {
     $users | ForEach {
       
       $mfaMethods = Get-MFAMethods -userId $_.id
+      $manager = Get-Manager -userId $_.id
 
       if ($withOutMFAOnly) {
         if ($mfaMethods.status -eq "disabled") {
@@ -339,6 +354,7 @@ Function Get-MFAStatusUsers {
           "Authenticator device" = $mfaMethods.authDevice
           "Phone number" = $mfaMethods.authPhoneNr
           "Email for SSPR" = $mfaMethods.SSPREmail
+          "Manager" = $manager
         }
       }
     }

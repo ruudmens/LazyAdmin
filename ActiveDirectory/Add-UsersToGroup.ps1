@@ -59,13 +59,13 @@ Function Add-UsersToGroup {
 
         # Find the users in the Active Directory
         $users | ForEach {
-            $user =  Get-ADUser -filter "$filter -eq '$_.name'" | Select ObjectGUID 
+            $user =  Get-ADUser -filter "$filter -eq '$_'" | Select ObjectGUID 
 
             if ($user) {
                 Add-ADGroupMember -Identity $groupName -Members $user
-                Write-Host "$_.name added to the group"
+                Write-Host "$_ added to the group"
             }else {
-                Write-Warning "$_.name not found in the Active Directory"
+                Write-Warning "$_ not found in the Active Directory"
             }
         }
     }

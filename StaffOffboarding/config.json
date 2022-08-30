@@ -6,7 +6,8 @@
     "internalOutOfOfficeMessage": "I have left the building. Please direct any emails at {{manager.fullname}} {{manager.mail}}.",
     "mailTemplateFile": "MailTemplateUserRemoved.html",
     "mailTemplateFileAdmin": "MailTemplateUserRemovedtoAdmin.html",
-    "removeUserFromGroup": "<group_name>"
+    "removeUserFromGroup": "<group_name>",
+    "sharePointAdminURL": "contoso-admin.sharepoint.com"
   },
   "SMTP": {
     "address": "contoso-com.mail.protection.outlook.com",

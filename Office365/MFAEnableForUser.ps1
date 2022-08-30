@@ -39,35 +39,36 @@ Function Set-MFAforUser {
     [string[]]$UserPrincipalName
 	)
 
-Begin {}
-
-Process {
-	if ($PSBoundParameters.ContainsKey('UserPrincipalName')) {
-		foreach ($user in $UserPrincipalName) {
-			try {
-		    # Src: https://docs.microsoft.com/en-us/azure/active-directory/authentication/howto-mfa-userstates
-		    $sa = New-Object -TypeName Microsoft.Online.Administration.StrongAuthenticationRequirement
-		    $sa.RelyingParty = "*"
-		    $sa.State = "Enabled"
-		    $sar = @($sa)
-
-		    # Change the following UserPrincipalName to the user you wish to change state
-		    Set-MsolUser -UserPrincipalName $user -StrongAuthenticationRequirements $sar -ErrorAction Stop
-
-		    [PSCustomObject]@{
-			    UserPrincipalName = $user
-			    MFAEnabled        = $true
-		    }
-	    }
-	    catch {
-		    [PSCustomObject]@{
-			    UserPrincipalName = $user
-			    MFAEnabled        = $false
-		    }
-	    }
-	 }
-	}else{
-		Write-Verbose "No UserPrincipalName given"
+	Begin {
+			# Src: https://docs.microsoft.com/en-us/azure/active-directory/authentication/howto-mfa-userstates
+			$sa = New-Object -TypeName Microsoft.Online.Administration.StrongAuthenticationRequirement
+			$sa.RelyingParty = "*"
+			$sa.State = "Enabled"
+			$sar = @($sa)
 	}
-  }
+
+	Process {
+		if ($PSBoundParameters.ContainsKey('UserPrincipalName')) {
+			foreach ($user in $UserPrincipalName) {
+				try {
+				
+					# Change the following UserPrincipalName to the user you wish to change state
+					Set-MsolUser -UserPrincipalName $user -StrongAuthenticationRequirements $sar -ErrorAction Stop
+
+					[PSCustomObject]@{
+						UserPrincipalName = $user
+						MFAEnabled        = $true
+					}
+				}
+				catch {
+					[PSCustomObject]@{
+						UserPrincipalName = $user
+						MFAEnabled        = $false
+					}
+				}
+		 }
+		}else{
+			Write-Verbose "No UserPrincipalName given"
+		}
+	}
 }

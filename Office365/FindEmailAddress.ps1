@@ -10,10 +10,10 @@
   List of recipient with mail addresses
 
 .NOTES
-  Version:        1.1
+  Version:        1.2
   Author:         R. Mens
   Creation Date:  14 feb 2022
-  Purpose/Change: Added dynamic distribution lists
+  Purpose/Change: Added exact email address lookup
 
 .EXAMPLE
   Seach for a specific email address
@@ -42,7 +42,13 @@ param(
     Mandatory = $true,
     HelpMessage = "Emailaddress or part of it to find"
   )]
-  [string]$emailAddress
+  [string]$emailAddress,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = "Exact match"
+  )]
+  [switch]$exact = $false
 )
 
 Function ConnectTo-EXO {
@@ -91,7 +97,12 @@ Function Search-Mailboxes {
   #>
   process {
     Write-Host "Searching in mailboxes for $emailAddress" -ForegroundColor Cyan
-    Get-EXOMailbox -filter "EmailAddresses -like '*$emailAddress*'"
+
+    if ($exact) {
+      Get-EXOMailbox -filter "EmailAddresses -like '$emailAddress'"
+    }else{
+      Get-EXOMailbox -filter "EmailAddresses -like '*$emailAddress*'"
+    }
   }
 }
 
@@ -102,7 +113,12 @@ Function Search-Distributionlists {
   #>
   process {
     Write-Host "Searching in distributionlists for $emailAddress" -ForegroundColor Cyan
-    Get-DistributionGroup -Filter "EmailAddresses -like '*$emailAddress*'"
+    
+    if ($exact) {
+      Get-DistributionGroup -filter "EmailAddresses -like '$emailAddress'"
+    }else{
+      Get-DistributionGroup -filter "EmailAddresses -like '*$emailAddress*'"
+    }
   }
 }
 
@@ -113,7 +129,12 @@ Function Search-Groups {
   #>
   process {
     Write-Host "Searching in groups for $emailAddress" -ForegroundColor Cyan
-    Get-UnifiedGroup -Filter "EmailAddresses -like '*$emailAddress*'"
+
+    if ($exact) {
+      Get-UnifiedGroup -filter "EmailAddresses -like '$emailAddress'"
+    }else{
+      Get-UnifiedGroup -filter "EmailAddresses -like '*$emailAddress*'"
+    }
   }
 }
 
@@ -124,7 +145,12 @@ Function Search-DynamicDistributionlists {
   #>
   process {
     Write-Host "Searching in dynamic distributionlists for $emailAddress" -ForegroundColor Cyan
-    Get-DynamicDistributionGroup -Filter "EmailAddresses -like '*$emailAddress*'"
+    
+    if ($exact) {
+      Get-DynamicDistributionGroup -filter "EmailAddresses -like '$emailAddress'"
+    }else{
+      Get-DynamicDistributionGroup -filter "EmailAddresses -like '*$emailAddress*'"
+    }
   }
 }
 
@@ -144,7 +170,7 @@ Function Find-EmailAddress{
     $result | ForEach {
         [pscustomobject]@{
           "DisplayName" = $_.DisplayName
-          "RecipientType" = $_.RecipientType
+          "RecipientTypeDetails" = $_.RecipientTypeDetails
           "Identity" = $_.identity
           "EmailAddresses" = $_.EmailAddresses
         }
