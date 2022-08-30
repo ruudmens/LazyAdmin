@@ -1,41 +1,33 @@
 <#
 .SYNOPSIS
   Create report of all mailbox and archive sizes
-
 .DESCRIPTION
   Collects all the mailbox and archive stats from Exchange Online users. By default it will also
   include the Shared Mailboxes. 
-
 .EXAMPLE
-  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com
-
-  Generate the mailbox size report with Shared mailboxes, mailbox archive and store 
-  the csv file in the script root location.
-
+  Get-MailboxSizeReport.ps1
+  Generate the mailbox size report with Shared mailboxes, mailbox archive.
 .EXAMPLE
-  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -sharedMailboxes only
-
+  Get-MailboxSizeReport.ps1 -sharedMailboxes only
   Get only the shared mailboxes
-
 .EXAMPLE
-  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -sharedMailboxes no
-
+  Get-MailboxSizeReport.ps1 -sharedMailboxes no
   Get only the user mailboxes
-
 .EXAMPLE
-  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -archive:$false
-
+  Get-MailboxSizeReport.ps1 -archive:$false
   Get the mailbox size without the archive mailboxes
-
 .EXAMPLE
-  Get-MailboxSizeReport.ps1 -adminUPN johndoe@contoso.com -path c:\temp\report.csv
-
+  Get-MailboxSizeReport.ps1 -CSVpath c:\temp\report.csv
   Store CSV report in c:\temp\report.csv
-
+.EXAMPLE
+  Get-MailboxSizeReport.ps1 | Format-Table
+  Print results for mailboxes in the console and format as table
 .NOTES
-  Version:        1.2
+  Version:        1.3
   Author:         R. Mens - LazyAdmin.nl
+  Modified By:    Bradley Wyatt - The Lazy Administrator
   Creation Date:  23 sep 2021
+  Modified Date:  26 aug 2022
   Purpose/Change: Check if we have a mailbox, before running the numbers
   Link:           https://lazyadmin.nl/powershell/office-365-mailbox-size-report
 #>
@@ -64,7 +56,7 @@ param(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\MailboxSizeReport-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
+  [string]$CSVpath
 )
 
 Function ConnectTo-EXO {
@@ -75,9 +67,9 @@ Function ConnectTo-EXO {
   
   process {
     # Check if EXO is installed and connect if no connection exists
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -eq $null)
+    if ($null -eq (Get-Module -ListAvailable -Name ExchangeOnlineManagement))
     {
-      Write-Host "Exchange Online PowerShell v2 module is requied, do you want to install it?" -ForegroundColor Yellow
+      Write-Host "Exchange Online PowerShell v2 module is required, do you want to install it?" -ForegroundColor Yellow
       
       $install = Read-Host Do you want to install module? [Y] Yes [N] No 
       if($install -match "[yY]") 
@@ -92,7 +84,7 @@ Function ConnectTo-EXO {
     }
 
 
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -ne $null) 
+    if ($null -ne (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) 
     {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name
@@ -120,7 +112,7 @@ Function Get-Mailboxes {
     }
 
     Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
   }
 }
 
@@ -160,20 +152,20 @@ Function Get-MailboxStats {
     $mailboxes = Get-Mailboxes
     $i = 0
 
-    $mailboxes | ForEach {
+    $mailboxes | ForEach-Object {
 
       # Get mailbox size     
-      $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
+      $mailboxSize = Get-MailboxStatistics -identity $_.UserPrincipalName | Select-Object TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
 
-      if ($mailboxSize -ne $null) {
+      if ($null -ne $mailboxSize) {
       
         # Get archive size if it exists and is requested
         $archiveSize = 0
         $archiveResult = $null
 
-        if ($archive.IsPresent -and ($_.ArchiveDatabase -ne $null)) {
-          $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
-          if ($archiveResult -ne $null) {
+        if ($archive.IsPresent -and ($null -ne $_.ArchiveDatabase)) {
+          $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select-Object ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
+          if ($null -ne $archiveResult) {
             $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
           }else{
             $archiveSize = 0
@@ -189,12 +181,14 @@ Function Get-MailboxStats {
           "Deleted Items Size (GB)" = ConvertTo-Gb -size $mailboxSize.TotalDeletedItemSize.ToString().Split("(")[0]
           "Item Count" = $mailboxSize.ItemCount
           "Deleted Items Count" = $mailboxSize.DeletedItemCount
-          "Mailbox Warning Quota (GB)" = $_.IssueWarningQuota.ToString().Split("(")[0]
-          "Max Mailbox Size (GB)" = $_.ProhibitSendReceiveQuota.ToString().Split("(")[0]
+          "Mailbox Warning Quota (GB)" = ($_.IssueWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
+          "Max Mailbox Size (GB)" = ($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
+          "Mailbox Free Space (GB)" = (($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1) - (ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0])
           "Archive Size (GB)" = $archiveSize
           "Archive Items Count" = $archiveResult.ItemCount
+          "Archive Mailbox Free Space (GB)*" = (ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]) - $archiveSize
           "Archive Deleted Items Count" = $archiveResult.DeletedItemCount
-          "Archive Warning Quota (GB)" = $_.ArchiveWarningQuota.ToString().Split("(")[0]
+          "Archive Warning Quota (GB)" = ($_.ArchiveWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
           "Archive Quota (GB)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
         }
 
@@ -209,19 +203,16 @@ Function Get-MailboxStats {
 # Connect to Exchange Online
 ConnectTo-EXO
 
-# Get mailbox status
-Get-MailboxStats | Export-CSV -Path $path -NoTypeInformation -Encoding UTF8
-
-if ((Get-Item $path).Length -gt 0) {
-  Write-Host "Report finished and saved in $path" -ForegroundColor Green
-}else{
-  Write-Host "Failed to create report" -ForegroundColor Red
+If ($CSVpath) {
+    # Get mailbox status
+    Get-MailboxStats | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
+    if ((Get-Item $CSVpath).Length -gt 0) {
+        Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
+    } 
+    else {
+        Write-Host "Failed to create report" -ForegroundColor Red
+    }
 }
-
-
-# Close Exchange Online Connection
-$close = Read-Host Close Exchange Online connection? [Y] Yes [N] No 
-
-if ($close -match "[yY]") {
-  Disconnect-ExchangeOnline -Confirm:$false | Out-Null
+Else {
+    Get-MailboxStats
 }
