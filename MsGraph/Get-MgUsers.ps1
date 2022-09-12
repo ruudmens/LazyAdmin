@@ -1,37 +1,27 @@
 <#
 .SYNOPSIS
   Get all Azure AD Users using Microsoft Graph with properties and export to CSV
-
 .DESCRIPTION
   This script collects all Azure Active Directory users with the most important properties. By default it will only
   get the enabled users, manager of the user and searches the whole domain.
-
 .OUTPUTS
   CSV with Azure Active Directory Users
-
 .NOTES
   Version:        1.0
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  15 feb 2022
   Purpose/Change: Initial script development
-
 .EXAMPLE
   Get all AzureAD users from the whole Domain
-
    .\Get-MgUsers.ps1 -path c:\temp\users.csv
-
 .EXAMPLE
   Get enabled and disabled users
-
    .\Get-MgUsers.ps1 -enabled both -path c:\temp\users.csv
-
    Other options are : true or false
-
 .EXAMPLE
   Don't lookup the managers display name
   .\Get-MgUsers -getManager:$false -path c:\temp\users.csv
 #>
-
 
 param(
   [Parameter(
@@ -98,7 +88,7 @@ Function Get-Users {
       }
 
       # Get the users
-      Get-MgUser -Filter $filter -Property $properties -All -ExpandProperty Manager | select $select
+      Get-MgUser -Filter $filter -All -Property $properties -ExpandProperty Manager | Select-Object $select
     }
 }
 
