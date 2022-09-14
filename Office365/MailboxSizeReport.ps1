@@ -23,12 +23,12 @@
   Get-MailboxSizeReport.ps1 | Format-Table
   Print results for mailboxes in the console and format as table
 .NOTES
-  Version:        1.3
+  Version:        1.4
   Author:         R. Mens - LazyAdmin.nl
   Modified By:    Bradley Wyatt - The Lazy Administrator
   Creation Date:  23 sep 2021
-  Modified Date:  26 aug 2022
-  Purpose/Change: Check if we have a mailbox, before running the numbers
+  Modified Date:  14 sep 2022
+  Purpose/Change: Check if we have an archive before running the numbers.
   Link:           https://lazyadmin.nl/powershell/office-365-mailbox-size-report
 #>
 
