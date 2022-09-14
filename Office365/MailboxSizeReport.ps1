@@ -135,13 +135,13 @@ Function ConvertTo-Gb {
         "GB" {$sizeInGb = ($value[0])}
         "MB" {$sizeInGb = ($value[0] / 1024)}
         "KB" {$sizeInGb = ($value[0] / 1024 / 1024)}
+        "B"  {$sizeInGb = 0}
       }
 
       return [Math]::Round($sizeInGb,2,[MidPointRounding]::AwayFromZero)
     }
   }
 }
-
 
 Function Get-MailboxStats {
   <#
@@ -167,10 +167,10 @@ Function Get-MailboxStats {
           $archiveResult = Get-EXOMailboxStatistics -UserPrincipalName $_.UserPrincipalName -Archive | Select-Object ItemCount,DeletedItemCount,@{Name = "TotalArchiveSize"; Expression = {$_.TotalItemSize.ToString().Split("(")[0]}}
           if ($null -ne $archiveResult) {
             $archiveSize = ConvertTo-Gb -size $archiveResult.TotalArchiveSize
-          }else{
-            $archiveSize = 0
           }
-        }  
+        }
+
+        write-host $mailboxSize.TotalDeletedItemSize
     
         [pscustomobject]@{
           "Display Name" = $_.DisplayName
@@ -184,12 +184,12 @@ Function Get-MailboxStats {
           "Mailbox Warning Quota (GB)" = ($_.IssueWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
           "Max Mailbox Size (GB)" = ($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
           "Mailbox Free Space (GB)" = (($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1) - (ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0])
-          "Archive Size (GB)" = $archiveSize
-          "Archive Items Count" = $archiveResult.ItemCount
-          "Archive Mailbox Free Space (GB)*" = (ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]) - $archiveSize
-          "Archive Deleted Items Count" = $archiveResult.DeletedItemCount
-          "Archive Warning Quota (GB)" = ($_.ArchiveWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
-          "Archive Quota (GB)" = ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]
+          "Archive Size (GB)" = $(if($null -ne $archiveResult) {ConvertTo-Gb -size $archiveResult.TotalArchiveSize} else {'-'})
+          "Archive Items Count" = $(if($null -ne $archiveResult) {$archiveResult.ItemCount} else {'-'}) 
+          "Archive Mailbox Free Space (GB)*" = $(if($null -ne $archiveResult) {(ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]) - $archiveSize} else {'-'})
+          "Archive Deleted Items Count" = $(if($null -ne $archiveResult) {$archiveResult.DeletedItemCount} else {'-'})
+          "Archive Warning Quota (GB)" = $(if($null -ne $archiveResult) {($_.ArchiveWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1} else {'-'})
+          "Archive Quota (GB)" = $(if($null -ne $archiveResult) {(ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0])} else {'-'})
         }
 
         $currentUser = $_.DisplayName
