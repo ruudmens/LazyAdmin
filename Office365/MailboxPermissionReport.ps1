@@ -1,40 +1,26 @@
 <#
 .SYNOPSIS
   Create report of all mailbox permissions
-
 .DESCRIPTION
   Get all mailbox permissions, including folder permissions for all or a selected group of users
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com
-
   Generate the mailbox report with Shared mailboxes, store the csv file in the script root location.
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -sharedMailboxes only
-
   Get only the shared mailboxes
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -sharedMailboxes no
-
   Get only the user mailboxes
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -folderPermissions:$false
-
   Get the mailbox permissions without the folder (inbox and calendar) permissions
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -UserPrincipalName jane@contoso.com,alex@contoso.com
-
   Get the mailbox permissions for a selection of users
-
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -displayNames:$false
-
   Don't get the full displayname for each permissions (to speed up the script)
-
  .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -csvFile "c:\temp\mailboxusers.csv"
 
@@ -50,10 +36,11 @@
   Store CSV report in c:\temp\report.csv
 
 .NOTES
-  Version:        1.1
+  Version:        1.2
   Author:         R. Mens - LazyAdmin.nl
-  Creation Date:  30-11-2021
-  Purpose/Change: Add CSV Import method
+  Creation Date:  30 nov 2021
+  Modified Date:  28 sep 2022
+  Purpose/Change: Fix counting
   Link:           https://lazyadmin.nl/powershell/get-mailbox-permissions-with-powershell/
 #>
 
@@ -99,9 +86,8 @@ param(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\MailboxPermissionReport-$((Get-Date -format "MM-dd-yyyy").ToString()).csv"
+  [string]$CSVpath
 )
-
 
 #
 # Configuration
@@ -122,7 +108,7 @@ Function ConnectTo-EXO {
   
   process {
     # Check if EXO is installed and connect if no connection exists
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -eq $null)
+    if ($null -eq (Get-Module -ListAvailable -Name ExchangeOnlineManagement))
     {
       Write-Host "Exchange Online PowerShell v2 module is requied, do you want to install it?" -ForegroundColor Yellow
       
@@ -139,7 +125,7 @@ Function ConnectTo-EXO {
     }
 
 
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -ne $null) 
+    if ($null -ne (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) 
     {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name
@@ -210,7 +196,7 @@ Function Get-SingleUser {
   )
 
   Get-EXOMailbox -Identity $identity -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress | 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
 }
 
 Function Get-Mailboxes {
@@ -227,7 +213,7 @@ Function Get-Mailboxes {
     }
 
     Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress| 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
   }
 }
 
@@ -245,10 +231,10 @@ Function Get-SendOnBehalf {
 
   # Get Send on Behalf
   $SendOnBehalfAccess = @();
-  if ($mailbox.GrantSendOnBehalfTo -ne $null) {
+  if ($null -ne $mailbox.GrantSendOnBehalfTo) {
     
     # Get a proper displayname of each user
-    $mailbox.GrantSendOnBehalfTo | ForEach {
+    $mailbox.GrantSendOnBehalfTo | ForEach-Object {
       $sendOnBehalfAccess += Get-DisplayName -identity $_
     }
   }
@@ -266,12 +252,13 @@ Function Get-SendAsPermissions {
     )]
     $identity
   )
-  $users = Get-EXORecipientPermission -Identity $identity | where { -not ($_.Trustee -match "NT AUTHORITY") -and ($_.IsInherited -eq $false)}
+  write-host $identity;
+  $users = Get-EXORecipientPermission -Identity $identity | Where-Object { -not ($_.Trustee -match "NT AUTHORITY") -and ($_.IsInherited -eq $false)}
 
   $sendAsUsers = @();
   
   # Get a proper displayname of each user
-  $users | ForEach {
+  $users | ForEach-Object {
     $sendAsUsers += Get-DisplayName -identity $_.Trustee
   }
   return $sendAsUsers
@@ -289,12 +276,12 @@ Function Get-FullAccessPermissions {
     $identity
   )
   
-  $users = Get-EXOMailboxPermission -Identity $identity | where { -not ($_.User -match "NT AUTHORITY") -and ($_.IsInherited -eq $false)}
+  $users = Get-EXOMailboxPermission -Identity $identity | Where-Object { -not ($_.User -match "NT AUTHORITY") -and ($_.IsInherited -eq $false)}
 
   $fullaccessUsers = @();
   
   # Get a proper displayname of each user
-  $users | ForEach {
+  $users | ForEach-Object {
     $fullaccessUsers += Get-DisplayName -identity $_.User
   }
   return $fullaccessUsers
@@ -318,7 +305,7 @@ Function Get-FolderPermissions {
 
   Try {
     $ErrorActionPreference = "Stop"; #Make all errors terminating
-    $users = Get-EXOMailboxFolderPermission -Identity "$($identity):\$($folder)" | where { -not ($_.User -match "Default") -and -not ($_.AccessRights -match "None")}
+    $users = Get-EXOMailboxFolderPermission -Identity "$($identity):\$($folder)" | Where-Object { -not ($_.User -match "Default") -and -not ($_.AccessRights -match "None")}
   }
   Catch{
     return $return
@@ -332,7 +319,7 @@ Function Get-FolderPermissions {
   $folderDelegated = @();
   
   # Get a proper displayname of each user
-  $users | ForEach {
+  $users | ForEach-Object {
     $folderUsers += Get-DisplayName -identity $_.User
     $folderAccessRights += $_.AccessRights
     $folderDelegated += $_.SharingPermissionFlags
@@ -377,7 +364,7 @@ Function Get-AllMailboxPermissions {
       if (Test-Path $csvFile) {
 
         # Read CSV File
-        Import-Csv $csvFile | ForEach {
+        Import-Csv $csvFile | ForEach-Object {
           Write-Host "- Get mailbox $($_.UserPrincipalName)" -ForegroundColor Cyan
           $mailboxes += Get-SingleUser -identity $_.UserPrincipalName
         }
@@ -391,8 +378,8 @@ Function Get-AllMailboxPermissions {
     
     $i = 0
     Write-Host "Collecting permissions" -ForegroundColor Cyan
-    $mailboxesqty=$mailboxes.Count
-    $mailboxes | ForEach {
+    $mailboxesqty = $mailboxes.Count
+    $mailboxes | ForEach-Object {
      
       # Get Send on Behalf Permissions
       $sendOnbehalfUsers = Get-SendOnBehalf -mailbox $_
@@ -404,10 +391,10 @@ Function Get-AllMailboxPermissions {
       $sendAsUsers = Get-SendAsPermissions -identity $_.UserPrincipalName
 
       # Count number or records
-      $sob = $sendOnbehalfUsers.Count
-      $fa = $fullAccessUsers.Count
-      $sa = $sendAsUsers.Count
-
+      $sob = if ($sendOnbehalfUsers -is [array]) {$sendOnbehalfUsers.Count} else {if($null -ne $sendOnbehalfUsers){1}else{0}}
+      $fa = if ($fullAccessUsers -is [array]) {$fullAccessUsers.Count} else {if($null -ne $fullAccessUsers){1}else{0}}
+      $sa = if ($sendAsUsers -is [array]) {$sendAsUsers.Count} else {if($null -ne $sendAsUsers){1}else{0}}
+      
       if ($folderPermissions.IsPresent) {
         
         # Get Inbox folder permission
@@ -487,16 +474,18 @@ Function Get-AllMailboxPermissions {
 # Connect to Exchange Online
 ConnectTo-EXO
 
-Get-AllMailboxPermissions | Export-CSV -Path $path -NoTypeInformation -encoding utf8
-
-if ((Get-Item $path).Length -gt 0) {
-  Write-Host "Report finished and saved in $path" -ForegroundColor Green
-
-  # Open the CSV file
-  Invoke-Item $path
-
-}else{
-  Write-Host "Failed to create report" -ForegroundColor Red
+If ($CSVpath) {
+  # Get mailbox status
+  Get-AllMailboxPermissions | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
+  if ((Get-Item $CSVpath).Length -gt 0) {
+      Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
+  } 
+  else {
+      Write-Host "Failed to create report" -ForegroundColor Red
+  }
+}
+Else {
+  Get-AllMailboxPermissions
 }
 
 # Close Exchange Online Connection
