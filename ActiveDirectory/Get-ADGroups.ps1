@@ -79,12 +79,12 @@ Function Get-Groups{
       switch ($builtin)
       {
         "include" {
-          Get-ADGroup -filter * -searchBase $dn -Properties $properties | select $properties
+          Get-ADGroup -filter * -searchBase $dn -Properties $properties | Select-Object $properties
         }
         "exclude" {
           $builtinUsers = "CN=users,$dn" 
           $filter = "GroupScope -ne 'Domainlocal'"
-          Get-ADGroup -filter $filter -searchBase $dn -Properties $properties |  Where-Object { $_.DistinguishedName -notlike "*,$builtinUsers" } | select $properties
+          Get-ADGroup -filter $filter -searchBase $dn -Properties $properties |  Where-Object { $_.DistinguishedName -notlike "*,$builtinUsers" } | Select-Object $properties
         }
       }
     }
@@ -108,25 +108,25 @@ Function Get-ADGroups {
        }
      }else{
        # Get distinguishedName of the domain
-       $dn = Get-ADDomain | Select -ExpandProperty DistinguishedName
+       $dn = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
        Write-Host "- Get groups in $dn" -ForegroundColor Cyan
        $groups += Get-Groups -dn $dn
      }
  
 
     # Loop through all computers
-    $groups | ForEach {
+    $groups | ForEach-Object {
       $managedBy = ''
       $memberOf = ''
 
       # If the group is managed, get the users name
       if ($null -ne $_.ManagedBy) {
-        $managedBy = Get-ADUser -Identity $_.ManagedBy | select -ExpandProperty name
+        $managedBy = Get-ADUser -Identity $_.ManagedBy | Select-Object -ExpandProperty name
       }
 
       # If the group is member of other groups, get the group names
       if ($_.MemberOf.count -gt 0) {
-        $memberOf = Get-ADPrincipalGroupMembership $_.name | select -ExpandProperty name
+        $memberOf = Get-ADPrincipalGroupMembership $_.name | Select-Object -ExpandProperty name
       }
 
       [pscustomobject]@{
@@ -151,6 +151,7 @@ If ($CSVpath) {
   Get-ADGroups | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
   if ((Get-Item $CSVpath).Length -gt 0) {
       Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
+      Invoke-Item $CSVpath
   } 
   else {
       Write-Host "Failed to create report" -ForegroundColor Red

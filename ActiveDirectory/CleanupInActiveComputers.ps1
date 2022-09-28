@@ -102,7 +102,7 @@ PROCESS
 				$_ 	-replace '{{amount}}', $Accounts.Length `
 				-replace '{{Table}}', $Table `
 				-replace '{{TimeSpan}}', $TimeSpan `
-			} | Out-String	
+			} | Out-String
 
 			#Send notification mail
 			send-MailMessage -SmtpServer $SMTP.address -To $SMTP.To-From $SMTP.From -Subject $SMTP.Subject -Body $mailTemplate -BodyAsHtml -Priority High

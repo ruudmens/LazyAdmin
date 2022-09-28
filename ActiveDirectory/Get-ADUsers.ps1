@@ -99,7 +99,7 @@ Function Get-Users {
       }
 
       # Get the users
-      Get-ADUser -Filter $filter -Properties $properties -SearchBase $dn | select $properties
+      Get-ADUser -Filter $filter -Properties $properties -SearchBase $dn | Select-Object $properties
     }
 }
 
@@ -121,18 +121,18 @@ Function Get-AllADUsers {
       }
     }else{
       # Get distinguishedName of the domain
-      $dn = Get-ADDomain | Select -ExpandProperty DistinguishedName
+      $dn = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
       Write-Host "- Get users in $dn" -ForegroundColor Cyan
       $users += Get-Users -dn $dn
     }
 
-    $users | ForEach {
+    $users | ForEach-Object {
 
       $manager = ""
 
       If (($getManager.IsPresent) -and ($_.manager)) {
         # Get the users' manager
-        $manager = Get-ADUser -Identity $_.manager | Select -ExpandProperty Name
+        $manager = Get-ADUser -Identity $_.manager | Select-Object -ExpandProperty Name
       }
 
       [pscustomobject]@{
