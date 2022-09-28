@@ -1,35 +1,27 @@
 <#
 .SYNOPSIS
   Get all AD Computers with properties and export to CSV
-
 .DESCRIPTION
   This script collects all Active Directory computers with the most important properties. By default it will only
   get the enabled computers, manager of the user and searches the whole domain.
-
 .OUTPUTS
   CSV with Active Direct
-
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens
   Creation Date:  24 may 2022
-  Purpose/Change: Initial script development
-
+  Purpose/Change: Make csv export optional
 .EXAMPLE
   Get all AD computers from the whole Domain
-
-   .\Get-ADComputers.ps1 -path c:\temp\computers.csv
-
+   .\Get-ADComputers.ps1 -csvpath c:\temp\computers.csv
 .EXAMPLE
   Get enabled and disabled computers
-
-   .\Get-ADComputers.ps1 -enabled both -path c:\temp\computers.csv
+   .\Get-ADComputers.ps1 -enabled both -csvpath c:\temp\computers.csv
 
    Other options are : true or false
-
 .EXAMPLE
   Specify OU to look up into
-  .\Get-ADComputers.ps1 -searchBase "OU=computers,OU=Amsterdam,DC=LazyAdmin,DC=Local" -path c:\temp\computers.csv
+  .\Get-ADComputers.ps1 -searchBase "OU=computers,OU=Amsterdam,DC=LazyAdmin,DC=Local" -csvpath c:\temp\computers.csv
 #>
 
 param(
@@ -50,7 +42,7 @@ param(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\ADcomputers-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
+  [string]$CSVpath
 )
 
 Function Get-Computers {
@@ -88,7 +80,7 @@ Function Get-Computers {
       }
 
       # Get the computers
-      Get-ADComputer -Filter $filter -searchBase $dn -Properties $properties | select $properties
+      Get-ADComputer -Filter $filter -searchBase $dn -Properties $properties | Select-Object $properties
     }
 }
 
@@ -111,14 +103,14 @@ Function Get-AllADComputers {
        }
      }else{
        # Get distinguishedName of the domain
-       $dn = Get-ADDomain | Select -ExpandProperty DistinguishedName
+       $dn = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
        Write-Host "- Get computers in $dn" -ForegroundColor Cyan
        $computers += Get-Computers -dn $dn
      }
  
 
     # Loop through all computers
-    $computers | ForEach {
+    $computers | ForEach-Object {
 
       [pscustomobject]@{
         "Name" = $_.Name
@@ -137,14 +129,19 @@ Function Get-AllADComputers {
   }
 }
 
-Get-AllADComputers | Sort-Object Name | Export-CSV -Path $path -NoTypeInformation
-
-if ((Get-Item $path).Length -gt 0) {
-  Write-Host "Report finished and saved in $path" -ForegroundColor Green
-
-  # Open the CSV file
-  Invoke-Item $path
-
-}else{
-  Write-Host "Failed to create report" -ForegroundColor Red
+If ($CSVpath) {
+  # Get mailbox status
+  Get-AllADComputers | Sort-Object Name | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
+  if ((Get-Item $path).Length -gt 0) {
+    Write-Host "Report finished and saved in $path" -ForegroundColor Green
+  
+    # Open the CSV file
+    Invoke-Item $path
+  
+  }else{
+    Write-Host "Failed to create report" -ForegroundColor Red
+  }
+}
+Else {
+  Get-AllADComputers | Sort-Object Name
 }
