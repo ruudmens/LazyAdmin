@@ -1,0 +1,35 @@
+{
+  "SMTP": {
+    "address": "lazydev-onmicrosoft-com.mail.protection.outlook.com",
+    "from": "Lazy IT Desk <it@lazyadmin.nl>",
+    "serviceDesk": "it@lazyadmin.nl",
+    "subject": "User Account details for {{user.fullname}}",
+    "attachment": "\\\\LazySrvLab02\\scripts\\assets\\new user manual.pdf"
+  },
+  "Settings": {
+    "mailTemplateManager": "MailTemplateUserCreated.html",
+    "mailTemplateServiceDesk": "MailTemplateServiceDesk.html",
+    "password": "lazyPass123",
+    "AccountSkuId": "lazydev:DEVELOPERPACK_E5"
+  },
+  "Companies": {
+    "lazyadmin": {
+      "City": "Amsterdam",
+      "Name": "LazyAdmin",
+      "OU": "OU=Users,OU=Amsterdam,OU=Sites,DC=Lazyadmin,DC=nl",
+      "Phone": "088 11 33 33 77",
+      "PostalCode": "1337 AB",
+      "WebSite": "lazyadmin.nl",
+      "StreetAddress": "Handelsplein 1"
+    },
+    "stonegrovebank": {
+      "City": "Oslo",
+      "Name": "StoneGroveBank",
+      "OU": "OU=Users,OU=Oslo,OU=Sites,DC=Lazyadmin,DC=nl",
+      "Phone": "088 11 33 33 77",
+      "PostalCode": "0010",
+      "WebSite": "thunnissen.nl",
+      "StreetAddress": "Karl Johans gate 1"
+    }
+  }
+}
