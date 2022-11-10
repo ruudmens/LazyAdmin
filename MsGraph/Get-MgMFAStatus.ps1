@@ -130,7 +130,7 @@ Function Get-Admins{
   #>
   process{
     $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
-                %{$role = $_.displayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
+                %{$role = $_.DisplayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
                   where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
                   % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
                 } | 
