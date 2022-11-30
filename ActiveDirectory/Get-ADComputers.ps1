@@ -7,10 +7,10 @@
 .OUTPUTS
   CSV with Active Direct
 .NOTES
-  Version:        1.1
+  Version:        1.2
   Author:         R. Mens
   Creation Date:  24 may 2022
-  Purpose/Change: Make csv export optional
+  Purpose/Change: Fix enabled/disable filter
 .EXAMPLE
   Get all AD computers from the whole Domain
    .\Get-ADComputers.ps1 -csvpath c:\temp\computers.csv
@@ -76,7 +76,7 @@ Function Get-Computers {
       {
         "true" {$filter = "enabled -eq 'true'"}
         "false" {$filter = "enabled -eq 'false'"}
-        "both" {$filter = ""}
+        "both" {$filter = "*"}
       }
 
       # Get the computers
