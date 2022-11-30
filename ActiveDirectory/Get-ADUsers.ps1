@@ -165,7 +165,7 @@ If ($CSVpath) {
       Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
 
       # Open the CSV file
-      Invoke-Item $path
+      Invoke-Item $CSVpath
   } 
   else {
       Write-Host "Failed to create report" -ForegroundColor Red
