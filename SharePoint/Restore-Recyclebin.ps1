@@ -20,9 +20,9 @@ $spUrl = ""
 Connect-PnPOnline -Url $spUrl -Interactive 
 
 # Set the restore date to x days in the past
-$today = (Get-Date) 
-$dateFrom = $today.date.addDays(-11)
-$dateTo = $today.date.addDays(-10)
+$today = Get-Date
+$dateFrom = $today.addDays(-11)
+$dateTo = $today.addDays(-10)
 
 # Set user to find files from
 $deletedByUser = ""
