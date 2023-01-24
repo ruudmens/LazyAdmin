@@ -21,7 +21,6 @@
   Purpose/Change: init
 
 .TODO
-  Show progress per library?
   Set log level - info/debug/error
 
 .LINK
@@ -289,11 +288,6 @@ Function New-SPSiteArchiveFolder() {
   }
 }
 
-# Parameters
-$SiteURL = "https://thunnissenonline.sharepoint.com/teams/Kogerhoffase2"
-$downloadPath = "X:\SharePoint Archief"
-$logFilePath = "X:\SharePoint Archief\Log"
- 
 # Connect to SharePoint Online
 Connect-PnPOnline $SiteURL -Interactive
 $Web = Get-PnPWeb
