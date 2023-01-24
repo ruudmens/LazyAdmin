@@ -25,7 +25,7 @@ if ($clearCache.ToUpper() -eq "Y"){
   
   try{
     if (Get-Process -ProcessName Teams -ErrorAction SilentlyContinue) { 
-        top-Process -Name Teams -Force
+        stop-Process -Name Teams -Force
         Start-Sleep -Seconds 3
         Write-Host "Teams sucessfully closed" -ForegroundColor Green
     }else{
