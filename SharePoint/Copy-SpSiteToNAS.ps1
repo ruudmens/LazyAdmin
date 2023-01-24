@@ -16,7 +16,7 @@
   Name: Copy-SpSiteToNAS.ps1
   Author: R. Mens - LazyAdmin.nl
           S. Rajack - SharePointDiary.com
-  Version: 1.0
+  Version: 1.1
   DateCreated:  2022
   Purpose/Change: init
 
@@ -32,25 +32,19 @@
 param(
   [Parameter(
     Mandatory = $true,
-    ParameterSetName  = "siteUrl",
-    HelpMessage = "SharePoint Site Url",
-    Position = 0
+    HelpMessage = "SharePoint Site Url"
     )]
   [string]$siteUrl,
 
   [Parameter(
     Mandatory = $true,
-    ParameterSetName  = "DownloadPath",
-    HelpMessage = "Enter path where to download files to",
-    Position = 1
+    HelpMessage = "Enter path where to download files to"
     )]
   [string]$downloadPath,
 
   [Parameter(
     Mandatory = $true,
-    ParameterSetName  = "LogFilePath",
-    HelpMessage = "Enter path for log file location",
-    Position = 3
+    HelpMessage = "Enter path for log file location"
     )]
   [string]$logFilePath,
 
