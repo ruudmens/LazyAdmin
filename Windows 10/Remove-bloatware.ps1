@@ -20,7 +20,6 @@
 
 #>
 
-Write-Output "Uninstalling default apps"
 $apps = @(
     # default Windows 10 apps
     "Microsoft.549981C3F5F10" #Cortana
@@ -130,26 +129,42 @@ $apps = @(
     "king.com.BubbleWitch3Saga"
     "king.com.CandyCrushSaga"
     "king.com.CandyCrushSodaSaga"
+    "Tile.TileWindowsApplication"
 
     # apps which other apps depend on
     "Microsoft.Advertising.Xaml"
 )
 
-foreach ($app in $apps) {
-    Write-Output "Trying to remove $app"
-
-    # Get the app version
-    $appVersion = (Get-AppxPackage -Name $app).Version 
+$apps | ForEach-Object {
 
     If ($appVersion){ 
-      # If the apps is found, remove it
-      Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -AllUsers
-    }
-    
-    # Remove the app from the local Windows Image to prevent re-install on new user accounts
-    Get-AppXProvisionedPackage -Online | Where-Object DisplayName -EQ $app | Remove-AppxProvisionedPackage -Online
+      Try { Write-Output "Attempting to uninstall: $_..."
+        Get-AppxPackage -Name $_ | Remove-AppxPackage -ErrorAction SilentlyContinue
+        Get-AppxPackage -Name $_ -AllUsers | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+      } 
+      Catch {
+        Write-Warning -Message "Failed to uninstall: $_"
+      }
 
-    # Cleanup Local App Data
-    $appPath="$Env:LOCALAPPDATA\Packages\$app*"
-    Remove-Item $appPath -Recurse -Force -ErrorAction 0
+      # Remove the app from the local Windows Image to prevent re-install on new user accounts
+      Get-AppXProvisionedPackage -Online | Where-Object DisplayName -EQ $_ | Remove-AppxProvisionedPackage -Online
+      Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $App | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+
+      # Cleanup Local App Data
+      $appPath="$Env:LOCALAPPDATA\Packages\$_*"
+      Remove-Item $appPath -Recurse -Force -ErrorAction 0
+    }
 }
+
+# Trial shortcuts/files
+$trialFiles = @(
+  "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Aanbiedingen.lnk"
+  "C:\Program Files (x86)\Online Services\Adobe"
+)
+
+$trialFiles.ForEach({
+  if (Test-Path -Path $_){
+    Write-Output "Removing $_ ..."
+    Remove-Item -Path $_ -Force -Confirm $false
+ }
+})
