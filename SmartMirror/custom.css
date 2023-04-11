@@ -1,0 +1,158 @@
+/* MagicMirror² Custom CSS Sample
+ *
+ * Change color and fonts here.
+ *
+ * Beware that properties cannot be unitless, so for example write '--gap-body: 0px;' instead of just '--gap-body: 0;'
+ *
+ * MIT Licensed.
+ */
+
+/* Uncomment and adjust accordingly if you want to import another font from the google-fonts-api: */
+/* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;700&display=swap'); */
+@import url('/fonts/latofonts.css');
+
+:root {
+  --color-text: #999;
+  --color-text-dimmed: #666;
+  --color-text-bright: #fff;
+  --color-background: black;
+
+  --font-primary: "LatoWeb";
+  --font-secondary: "LatoWeb";
+  
+  --font-size: 20px;
+  --font-size-small: 0.75rem;
+
+  --gap-body-top: 60px;
+  --gap-body-right: 60px;
+  --gap-body-bottom: 60px;
+  --gap-body-left: 60px;
+  
+  --gap-modules: 30px;
+}
+body, html {
+  font-family: "LatoWeb", sans-serif;
+}
+.large{
+  font-size: 4.25em;
+  font-family: 'LatoWebLight';
+}
+header{
+  border-bottom: none;
+  color: #fff;
+  font-family: 'LatoWebLight';
+  font-size: 1.3em;
+  text-transform: none;
+  margin-bottom: 20px;
+}
+/*
+  Weather
+*/
+.MMM-OpenWeatherMapForecast{
+  width: 500px;
+}
+.MMM-OpenWeatherMapForecast .current-conditions-wrapper .current.feelslike{
+  font-size:2em;
+  line-height:60px;
+}
+.MMM-OpenWeatherMapForecast .summary{
+  color: #fff;
+}
+.MMM-OpenWeatherMapForecast .module-content{
+  width: 500px;
+}
+.MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container{
+  margin-left:-10px;
+  border:none;
+  width:300px;
+}
+.MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container .forecast-item .time, .MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container .forecast-item .day-name{
+  font-size:17px;
+}
+.MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container .forecast-item .precipitation-container, .MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container .forecast-item .wind-container{
+  display:none;
+}
+.MMM-OpenWeatherMapForecast .wrapper.tiled .forecast-container .forecast-item{
+  border-bottom:none;
+}
+/* 
+  CLOCK
+*/
+#module_2_clock .digital {
+  display: flex;
+  flex-direction: column;
+}
+#module_2_clock div.date {
+  order: 2;
+  color: #fff;
+  font-size: 1.3em;
+  font-family: 'LatoWebLight';
+}
+#module_2_clock div.time {
+  order: 1;
+  font-weight: 300;
+  font-size: 6em;
+  letter-spacing: -3px;
+  color: #fff;    
+}
+
+/*
+  Travel Time
+*/
+.region.bottom.left, .region.bottom.right{
+  height: 250px;
+}
+.MMM-google-route header::before{
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  font-family: FontAwesome;
+  font-weight: 400; 
+  content: "\f017";
+  margin-right: 15px;
+}
+.MMM-google-route tr td:first-child{
+  width: 100px;
+}
+.MMM-google-route tr td:last-child{
+  width: 300px;
+}
+/*
+  Calendar
+*/
+.MMM-GoogleCalendar header::before{
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  font-family: FontAwesome;
+  font-weight: 400; 
+  content: "\f133";
+  margin-right: 15px;
+}
+/*
+  Stock
+*/
+.MMM-Jast header::before{
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  font-family: FontAwesome;
+  font-weight: 400; 
+  content: "\f201";
+  margin-right: 15px;
+}
+.MMM-Jast .jast-stock{
+  font-size: 1rem;
+  line-height: 1.25;
+  color: #fff;
+  width:400px;
+}
+.MMM-Jast .jast-stock span{
+  width:150px;
+}
