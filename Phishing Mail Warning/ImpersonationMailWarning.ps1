@@ -65,6 +65,7 @@ foreach ($chunk in $chunks) {
 										-ApplyHtmlDisclaimerFallbackAction Wrap
 
 	Write-Host "Transport rule $c created" -ForegroundColor Green
+	$c++;
 }
 
 if ($existingTransportRule) 
