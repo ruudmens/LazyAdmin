@@ -41,12 +41,12 @@ param(
 Function ConnectTo-EXO {
   <#
     .SYNOPSIS
-        Connects to EXO when no connection exists. Checks for EXO v2 module
+        Connects to EXO when no connection exists. Checks for EXO v3 module
   #>
   
   process {
     # Check if EXO is installed and connect if no connection exists
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -eq $null)
+    if ($null -eq (Get-Module -ListAvailable -Name ExchangeOnlineManagement))
     {
       Write-Host "Exchange Online PowerShell 3 module is requied, do you want to install it?" -ForegroundColor Yellow
       
@@ -62,7 +62,7 @@ Function ConnectTo-EXO {
       }
     }
 
-    if ((Get-Module -ListAvailable -Name ExchangeOnlineManagement) -ne $null) 
+    if ($null -ne (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) 
     {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name

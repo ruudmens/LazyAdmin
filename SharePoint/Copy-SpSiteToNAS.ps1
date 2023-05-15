@@ -43,10 +43,10 @@ param(
   [string]$downloadPath,
 
   [Parameter(
-    Mandatory = $true,
+    Mandatory = $false,
     HelpMessage = "Enter path for log file location"
     )]
-  [string]$logFilePath,
+  [string]$logFilePath = "c:\temp\sp-archive.txt",
 
   [Parameter(
     Mandatory = $false,

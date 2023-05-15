@@ -170,7 +170,8 @@ Function Get-MailboxStats {
           }
         }
 
-        write-host $mailboxSize.TotalDeletedItemSize
+        # Get Sent Items 
+        $sentItems = Get-EXOMailboxFolderStatistics -Identity $_.UserPrincipalName -Folderscope sentitems | Select-Object ItemsInFolderAndSubfolders,@{Name = "sentItemSize"; Expression = {$_.FolderAndSubfolderSize.ToString().Split("(")[0]}}
     
         [pscustomobject]@{
           "Display Name" = $_.DisplayName
@@ -184,6 +185,8 @@ Function Get-MailboxStats {
           "Mailbox Warning Quota (GB)" = ($_.IssueWarningQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
           "Max Mailbox Size (GB)" = ($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1
           "Mailbox Free Space (GB)" = (($_.ProhibitSendReceiveQuota.ToString().Split("(")[0]).Split(" GB") | Select-Object -First 1) - (ConvertTo-Gb -size $mailboxSize.TotalItemSize.ToString().Split("(")[0])
+          "Sent Items Size (GB)" = $(if($null -ne $sentItems) {ConvertTo-Gb -size $sentItems.sentItemSize} else {'-'})
+          "Sent Items Count" = $(if($null -ne $sentItems) {$sentItems.ItemsInFolderAndSubfolders} else {'-'}) 
           "Archive Size (GB)" = $(if($null -ne $archiveResult) {ConvertTo-Gb -size $archiveResult.TotalArchiveSize} else {'-'})
           "Archive Items Count" = $(if($null -ne $archiveResult) {$archiveResult.ItemCount} else {'-'}) 
           "Archive Mailbox Free Space (GB)*" = $(if($null -ne $archiveResult) {(ConvertTo-Gb -size $_.ArchiveQuota.ToString().Split("(")[0]) - $archiveSize} else {'-'})
