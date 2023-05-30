@@ -5,27 +5,17 @@ default_config:
 tts:
   - platform: google_translate
 
-# Yes I should use these...
 group: !include groups.yaml
 #automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
-# Used for calendar
-google:
-  client_id: <client-id>
-  client_secret: <client-secrete>
-
 homeassistant:
   packages: !include_dir_named include
 
-#
-# Automation to show doorbell feed on new view when the doorbell is pressed
-#
 automation:
 - id: show_camera_when_doorbell_pressed
   alias: Show Doorbell camera
-  hide_entity: false
   initial_state: 'true'
   trigger:
     platform: mqtt
@@ -36,19 +26,15 @@ automation:
   action:
     - service: browser_mod.navigate
       data:
-        navigation_path: /lovelace/doorbell # View to open
+        navigation_path: /lovelace/doorbell
         deviceId: dashboard
     - service: browser_mod.window_reload
-#
-# Stop the doorbell Feed
-#
 - id: stop_doorbell_camera
   alias: Stop Doorbell camera
-  hide_entity: false
   initial_state: 'true'
   trigger:
     platform: mqtt
-    topic: "home/doorbell"  # MQTT Trigger from Homey
+    topic: "home/doorbell"
     # Optional
     payload: "false"
     encoding: "utf-8"
@@ -57,6 +43,45 @@ automation:
       data:
         navigation_path: /lovelace/0
         deviceId: dashboard
+- id: hangout_modus
+  alias: hangout modus
+  trigger:
+    platform: mqtt
+    topic: "home/hang-out"
+    # Optional
+    payload: "false"
+    encoding: "utf-8"
+
+mqtt:
+  sensor:
+    - name: "car_is_plugged"
+      unique_id : car_is_plugged
+      state_topic: "homie/homey/kia/evInfo/isPlugged"
+    - name: "car_range"
+      unique_id : car_range
+      state_topic: "homie/homey/kia/range"
+      value_template: "{{ value|int }}"
+      unit_of_measurement: "km"
+    - name: "car_battery_level"
+      unique_id : car_battery_level
+      state_topic: "homie/homey/kia/evInfo/chargeLevel"
+      unit_of_measurement: "%"
+    - name: "car_charge_time"
+      unique_id : car_charge_time
+      state_topic: "homie/homey/kia/evInfo/timeUntilCharged"
+    - name: "car_is_charging"
+      unique_id : car_is_charging
+      state_topic: "homie/homey/kia/evInfo/isCharging"
+  switch:
+    - name: "Hangout modus"
+      unique_id : hangout-modus
+      state_topic: "homie/homey/hangout/button"
+      command_topic: "homie/homey/hangout/button/set"
+      qos: 0
+      payload_on: "true"
+      payload_off: "false"
+      optimistic: false
+      retain: true
 
 lovelace:
   mode: yaml
@@ -74,184 +99,9 @@ lovelace:
       { url: /local/style.css,                                                     type: css },
       { url: /local/latofonts.css,                                                 type: css }]
 
-#
-# Browser mod integration
-#
+
 browser_mod:
   devices:
     1842a562-204991ad:
       name: dashboard
       force_stay_awake: true
-
-#
-# Custom sensor to read out car statics    
-#
-sensor:
-  - platform: rest
-    scan_interval: 300
-    method: POST
-    name: kia_sensors
-    resource: "https://www.kia.com/nl/webservices/mykia/connectedcar.asmx/GetCanbusData"
-    headers: 
-      Connection: keep-alive 
-      Content-Length: 0
-      Accept: application/json, text/javascript, */*; q=0.01
-      Origin: https://www.kia.com
-      X-Requested-With: XMLHttpRequest
-      User-Agent: Mozilla/5.0 (Linux; Android 7.0; SM-G892A Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/60.0.3112.107 Mobile Safari/537.36 gonative
-      Sec-Fetch-Mode: cors
-      Sec-Fetch-Site: same-origin
-      Referer: https://www.kia.com/nl/mijnkia/dashboard/
-      Accept-Encoding: gzip, deflate, br
-      Accept-Language: en-US,en;q=0.9,nl;q=0.8
-      Cookie: ASP.NET_SessionId=<session-id>
-     
-    json_attributes:
-      - SelectedCar
-      - CanbusLast
-      
-    value_template: 'OK'
-  
-  - platform: template
-    sensors:
-      kia_soc:
-        friendly_name: "Battery percentage"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["ev"]["soc"] }}'
-        device_class: 'battery'
-        unit_of_measurement: '%'
-        
-  - platform: template    
-    sensors:   
-      kia_range:
-        friendly_name: "Range"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["Range"] }}'
-        unit_of_measurement: 'km'
-        
-  - platform: template    
-    sensors:   
-      kia_odo:
-        friendly_name: "Odo meter"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["odoMeter"] }}'
-        unit_of_measurement: 'km'     
-
-  - platform: template    
-    sensors:   
-      kia_time:
-        friendly_name: "Time until charged"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["ev"]["timeUntillCharged"] }}'
-        unit_of_measurement: 'hours'     
-     
-  - platform: template    
-    sensors:   
-      kia_position_lat:
-        friendly_name: "Position lattitude"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["position"]["Lattitude"] }}'
-        unit_of_measurement: ''   
-
-  - platform: template    
-    sensors:   
-      kia_position_long:
-        friendly_name: "Position longitude"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["position"]["Longitude"] }}'
-        unit_of_measurement: ''   
-
-  - platform: template    
-    sensors:   
-      kia_driving_eco:
-        friendly_name: "Driving style eco"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["drivingStyle"]["eco"] }}'
-        unit_of_measurement: '%'  
-
-  - platform: template    
-    sensors:   
-      kia_driving_normal:
-        friendly_name: "Driving style normal"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["drivingStyle"]["normal"] }}'
-        unit_of_measurement: '%'  
-  
-  - platform: template    
-    sensors:   
-      kia_driving_sport:
-        friendly_name: "Driving style sport"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["drivingStyle"]["sport"] }}'
-        unit_of_measurement: '%'  
-
-  - platform: template    
-    sensors:   
-      kia_frontleft:
-        friendly_name: "Tire pressure front left"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["TirePressure"]["FrontLeft"] }}'
-        device_class: pressure
-        unit_of_measurement: 'bar' 
-
-  - platform: template    
-    sensors:   
-      kia_frontright:
-        friendly_name: "Tire pressure front right"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["TirePressure"]["FrontRight"] }}'
-        device_class: pressure
-        unit_of_measurement: 'bar' 
-        
-  - platform: template    
-    sensors:   
-      kia_rearleft:
-        friendly_name: "Tire pressure rear left"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["TirePressure"]["RearLeft"] }}'
-        device_class: pressure
-        unit_of_measurement: 'bar' 
-        
-  - platform: template    
-    sensors:   
-      kia_rearright:
-        friendly_name: "Tire pressure rear right"
-        value_template: '{{ states.sensor.kia_sensors.attributes["CanbusLast"]["TirePressure"]["RearRight"] }}'
-        device_class: pressure
-        unit_of_measurement: 'bar'
-
-  - platform: template
-    sensors:
-      all_lights:
-        friendly_name: "All lights"
-        entity_id: light.lampen_woonkamer
-        value_template: '{% if is_state("light.lampen_woonkamer", "on") %}Turn off all lights{% else %}Turn on all lights{% endif %}'
-         
-        
-binary_sensor:
-  - platform: template
-    sensors:
-      kia_locked:
-        device_class: lock
-        friendly_name: "Doors locked"
-        value_template: >-
-          {{ states.sensor.kia_sensors.attributes["CanbusLast"]["DoorsLocked"]|float < 1 }}
-
-  - platform: template
-    sensors:
-      kia_handbrake:
-        device_class: lock
-        friendly_name: "Handbrake"
-        value_template: >-
-          {{ states.sensor.kia_sensors.attributes["CanbusLast"]["Handbrake"]|float < 1 }}
-
-  - platform: template
-    sensors:
-      kia_tire_warning:
-        device_class: safety
-        friendly_name: "Tire warning"
-        value_template: >-
-          {{ states.sensor.kia_sensors.attributes["CanbusLast"]["TireWarning"]|float > 0 }}
-
-  - platform: template
-    sensors:
-      kia_charging:
-        friendly_name: "Charging"
-        value_template: >-
-          {{ states.sensor.kia_sensors.attributes["CanbusLast"]["ev"]["charging"]|float > 0 }}
-
-  - platform: template
-    sensors:
-      kia_plug:
-        device_class: plug
-        friendly_name: "Is plugged in"
-        value_template: >-
-          {{ states.sensor.kia_sensors.attributes["CanbusLast"]["ev"]["isPlugged"]|float > 0 }}

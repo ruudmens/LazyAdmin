@@ -64,9 +64,6 @@ button_card_templates:
     styles:
         card:
         - paddding: 0px;
-#
-# Kiosk mode settings to hide menu and sidebar on tablet
-#
 kiosk_mode:
   mobile_settings:
     hide_header: true
@@ -241,7 +238,12 @@ views:
                 template:
                 - base
                 - quick-action
-                entity: switch.lampen_uit_knop
+                tap_action:
+                  action: call-service
+                  service: mqtt.publish
+                  service_data:
+                    topic: homie/homey/lampen-uit/button/set
+                    payload: 'true'
                 name: Room
                 icon:  mdi:lightbulb-on
                 show_state: true
@@ -268,7 +270,12 @@ views:
                 template:
                 - base
                 - quick-action
-                entity: switch.lampen_aan_knop
+                tap_action:
+                  action: call-service
+                  service: mqtt.publish
+                  service_data:
+                    topic: homie/homey/lampen-aan/button/set
+                    payload: 'true'
                 name: Room
                 icon:  mdi:lightbulb-outline
                 show_state: true  
@@ -388,15 +395,15 @@ views:
                     #container{
                         margin: -10px 0;
                     }
-        # Hangout Scene
+        # Oppas Modus
         - type: 'custom:button-card'
           template:
           - base
           - quick-action
-          entity: switch.hang_out_knop
-          name: Hang out
-          icon:  mdi:music-note
-          show_state: false  
+          entity: switch.oppas_knop
+          name: Oppas
+          icon:  mdi:account-child
+          show_state: true  
           show_header_toggle: false
           view_layout:
             grid-column: 3 / 4
@@ -405,21 +412,79 @@ views:
             icon:
             - color: rgb(0,201,167)
         # Game Scene
-        - type: 'custom:button-card'
-          template:
-          - base
-          - quick-action
-          entity: switch.games_knop
-          name: Game mode
-          icon:  mdi:sony-playstation
-          show_state: false  
-          show_header_toggle: false
+        - type: custom:state-switch
+          entity: light.lampen_woonkamer
+          default: off
           view_layout:
-            grid-column: 4 / 5
-            grid-row: 2 / 3
-          styles:
-            icon:
-            - color: rgb(193,167,206)
+            grid-column: 1
+            grid-row: 2
+          states:
+            "on":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.hangout_modus
+                tap_action:
+                  action: call-service
+                  service: mqtt.publish
+                  service_data:
+                    topic: homie/homey/hangout/button/set
+                    payload: 'false'
+                name: Room
+                icon:  mdi:lightbulb-on
+                show_state: true
+                show_header_toggle: false
+                state_display: "Turn off all lights"
+                styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
+            "off":       
+                type: 'custom:button-card'
+                template:
+                - base
+                - quick-action
+                entity: switch.hangout_modus
+                tap_action:
+                  action: call-service
+                  service: mqtt.publish
+                  service_data:
+                    topic: homie/homey/hangout/button/set
+                    payload: 'true'
+                name: Room
+                icon:  mdi:lightbulb-outline
+                show_state: true  
+                show_header_toggle: false
+                state_display: "Turn on all lights"
+                styles:
+                    icon:
+                    - color: rgb(255,213,113)
+                style: |
+                    .button-card-main{
+                        height:148px !important;
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    #icon {
+                        width: 25px !important;
+                        margin-right: 8px;
+                        margin-top: -20px;
+                    }
+                    #container{
+                        margin: -10px 0;
+                    }
         # Alarm
         - type: custom:state-switch
           entity: switch.surveillance_status
@@ -466,6 +531,9 @@ views:
                 show_state: true  
                 show_header_toggle: false
                 state_display: "Enable alarm"
+                tap_action:
+                    action: navigate
+                    navigation_path: driveway
                 styles:
                     icon:
                     - color: rgb(237,216,163)
@@ -743,13 +811,13 @@ views:
             }
         # Car
         - type: 'custom:button-card'
-          entity: binary_sensor.kia_charging
+          entity: sensor.car_range
           view_layout:
             grid-column: 4
             grid-row: 3
           icon: >
             [[[
-                if (states['binary_sensor.kia_charging'].state == 'on')
+                if (states['sensor.car_is_charging'].state == '1')
                     return "mdi:ev-plug-type2";
                 return "mdi:connection"
             ]]]
@@ -785,13 +853,13 @@ views:
                 - width: 50%;
                 - color: rgb(170,171,175) !important;
           custom_fields:
-           # [[[ return `${states['sensor.kia_range'].state} <span>km / </span>${states['sensor.kia_soc'].state} <span>%</span>` ]]]
+           # [[[ return `${states['sensor.range'].state} <span>km / </span>${states['sensor.Battery_level'].state} <span>%</span>` ]]]
             range: >
-                [[[ return `${states['sensor.kia_range'].state} <span>km` ]]]
+                [[[ return `${states['sensor.range'].state} <span>km / </span>${states['sensor.car_battery_level'].state} <span>%</span>` ]]]
             note: >
                 [[[ 
-                    if (states['binary_sensor.kia_charging'].state == 'on')
-                        return `Remaining ${Math.round(states['sensor.kia_time'].state / 60 * 100) / 100} u`
+                    if (states['sensor.car_is_charging'].state == '1')
+                        return `Remaining ${Math.round(states['sensor.car_charge_time'].state / 60 * 100) / 100} u`
                 ]]]
           style: |
             ha-card, :host{
@@ -901,4 +969,21 @@ views:
         show_state: false
         tap_action:
           action: none
+        type: picture-entity
+  - panel: true
+    icon: mdi:video
+    path: "driveway"
+    cards:
+      - aspect_ratio: 100%
+        camera_image: camera.la_driveway
+        camera_view: live
+        entity: camera.la_driveway
+        hold_action:
+          action: none
+        show_name: false
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /lovelace/0
+        navigation_path: '/lovelace/0'
         type: picture-entity
