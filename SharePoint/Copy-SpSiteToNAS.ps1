@@ -175,7 +175,7 @@ Function Copy-SPOFiles(){
       # Create a Local Folder for the Document library, if it doesn't exist
       $libraryFolder = $localFolder +"\" +$List.RootFolder.Name
 
-      If (!(Test-Path -Path $libraryFolder)) {
+      If (!(Test-Path -LiteralPath $libraryFolder)) {
         New-Item -ItemType Directory -Path $libraryFolder | Out-Null
       }
 
@@ -186,62 +186,78 @@ Function Copy-SPOFiles(){
           $LocalFolderPath = $localFolder + ($_.FieldValues.FileRef.Substring($Web.ServerRelativeUrl.Length)) -replace "/","\"
           
           # Create Local Folder, if it doesn't exist
-          If (!(Test-Path -Path $LocalFolderPath)) {
+          If (!(Test-Path -LiteralPath $LocalFolderPath)) {
                   New-Item -ItemType Directory -Path $LocalFolderPath | Out-Null
           }
+          Download-Files -ListItems
           Write-Log -Message "Created subfolder $LocalFolderPath" -level FULL
       }
 
-      # Get all Files from the folder
-      $FilesColl =  $ListItems | Where {$_.FileSystemObjectType -eq "File"}
-      $FileCounter = 0
-
-      # Iterate through each file and download
-      $FilesColl | ForEach-Object {
-
-          # Frame the Parameters to download file
-          $FileDownloadPath = ($localFolder + ($_.FieldValues.FileRef.Substring($Web.ServerRelativeUrl.Length)) -replace "/","\").Replace($_.FieldValues.FileLeafRef,'')
-          
-          $FileName = $_.FieldValues.FileLeafRef
-          $SourceURL = $_.FieldValues.FileRef
-          $FileModifiedDate = $_.FieldValues.Modified
-
-          # Creating progressbar
-          $FileCounter += 1;
-
-          $downloadItemsProgress = @{
-            Activity         = "Downloading items from $($List.Title)"
-            Status           = "Progress->"
-            PercentComplete  = ($FileCounter/$FilesColl.Count) * 100
-            CurrentOperation = $FileName
-          }
-          Write-Progress @downloadItemsProgress
-
-          #Check File Exists
-          $FilePath = Join-Path -Path $FileDownloadPath -ChildPath $_.FieldValues.FileLeafRef
-
-          If (-not(Test-Path -Path $FilePath -PathType Leaf)) {
-            # Download the File
-            Get-PnPFile -ServerRelativeUrl $SourceURL -Path $FileDownloadPath -FileName $FileName -AsFile -force
-            Write-Log -Message "Downloaded $FileName from $SourceUrl " -level FULL
-            $Global:filesCopied++
-          }else{
-            # Compare local and SPO file date
-            if ($FileModifiedDate -gt ( Get-ChildItem -Path $FilePath | Select -ExpandProperty LastWriteTime)) {
-              # SPO file is newer than local file, overwrite local file
-              Get-PnPFile -ServerRelativeUrl $SourceURL -Path $FileDownloadPath -FileName $FileName -AsFile -force
-              Write-Log -Message "Downloaded newer version of $FileName from $SourceUrl " -level FULL
-              $Global:filesCopied++
-            }else{
-              Write-Log -Message "Skipped $FileName from $SourceUrl - Already exists" -level FULL
-              $Global:filesSkipped++
-            }
-          }
-      }
       Write-Progress -CurrentOperation "downloadItems" -Activity "Completed downloading items from library $($List.Title)" -Completed
     }
     Catch {
       Write-Log -Message "Error Downloading library $($List.Title) : $($_.Exception.Message)" -level ERROR
+    }
+  }
+}
+
+Function Download-Files() {
+    <#
+  .SYNOPSIS
+    Download all folders and files from the given library
+  #>
+  param(
+    [Parameter(Mandatory = $true)] $ListItems,
+    [Parameter(Mandatory = $true)] $List,
+    [Parameter(Mandatory = $true)] $localFolder
+  )
+  process{
+    # Get all Files from the folder
+    $FilesColl =  $ListItems | Where {$_.FileSystemObjectType -eq "File"}
+    $FileCounter = 0
+
+    # Iterate through each file and download
+    $FilesColl | ForEach-Object {
+
+        # Frame the Parameters to download file
+        $FileDownloadPath = ($localFolder + ($_.FieldValues.FileRef.Substring($Web.ServerRelativeUrl.Length)) -replace "/","\").Replace($_.FieldValues.FileLeafRef,'')
+        
+        $FileName = $_.FieldValues.FileLeafRef
+        $SourceURL = $_.FieldValues.FileRef
+        $FileModifiedDate = $_.FieldValues.Modified
+
+        # Creating progressbar
+        $FileCounter += 1;
+
+        $downloadItemsProgress = @{
+          Activity         = "Downloading items from $($List.Title)"
+          Status           = "Progress->"
+          PercentComplete  = ($FileCounter/$FilesColl.Count) * 100
+          CurrentOperation = $FileName
+        }
+        Write-Progress @downloadItemsProgress
+
+        #Check File Exists
+        $FilePath = Join-Path -Path $FileDownloadPath -ChildPath $_.FieldValues.FileLeafRef
+
+        If (-not(Test-Path -Path $FilePath -PathType Leaf)) {
+          # Download the File
+          Get-PnPFile -ServerRelativeUrl $SourceURL -Path $FileDownloadPath -FileName $FileName -AsFile -force
+          Write-Log -Message "Downloaded $FileName from $SourceUrl " -level FULL
+          $Global:filesCopied++
+        }else{
+          # Compare local and SPO file date
+          if ($FileModifiedDate -gt ( Get-ChildItem -Path $FilePath | Select -ExpandProperty LastWriteTime)) {
+            # SPO file is newer than local file, overwrite local file
+            Get-PnPFile -ServerRelativeUrl $SourceURL -Path $FileDownloadPath -FileName $FileName -AsFile -force
+            Write-Log -Message "Downloaded newer version of $FileName from $SourceUrl " -level FULL
+            $Global:filesCopied++
+          }else{
+            Write-Log -Message "Skipped $FileName from $SourceUrl - Already exists" -level FULL
+            $Global:filesSkipped++
+          }
+        }
+      }
     }
   }
 }
@@ -258,7 +274,7 @@ Function Get-NrOfDownloadedFiles() {
   Process {
     $libraryFolder = $localFolder +"\" +$List.RootFolder.Name
 
-    If (Test-Path -Path $libraryFolder) {
+    If (Test-Path -LiteralPath $libraryFolder) {
       (Get-ChildItem -Path $libraryFolder -File -Recurse).count
     }
   }
@@ -274,7 +290,7 @@ Function New-SPSiteArchiveFolder() {
     [Parameter(Mandatory = $true)] $downloadPath
   )
   process {
-    If (!(Test-Path -Path ($downloadPath +"\" +$title))) {
+    If (!(Test-Path -LiteralPath ($downloadPath +"\" +$title))) {
       New-Item -Path $downloadPath -Name $title -ItemType 'directory'
     }Else{
       $downloadPath +"\" +$title
@@ -323,4 +339,4 @@ Write-Log -Message "Download completed" -level INFO
 Write-Log -Message "---------------------------------------------" -level INFO
 Write-Log -Message "Number of files copied $($Global:filesCopied)" -level INFO
 Write-Log -Message "Number of files skipped $($Global:filesSkipped)" -level INFO
-Write-Log -Message "---------------------------------------------" -level INFO
+Write-Log -Message "---------------------------------------------" -level INFO  
