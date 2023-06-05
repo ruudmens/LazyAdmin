@@ -3,6 +3,6 @@ Get-AppxPackage -AllUsers | Where-Object {$_.Name -like "*WebExperience*"} | Rem
 
 # Remove the provisioned package for new users
 $AppxRemoval = Get-AppxProvisionedPackage -Online | Where-Object {$_.PackageName -like "*WebExperience*"} 
-    ForEach ( $App in $AppxRemoval) {
-        Remove-AppxProvisionedPackage -Online -PackageName $App.PackageName 
-    }
+ForEach ( $App in $AppxRemoval) {
+    Remove-AppxProvisionedPackage -Online -PackageName $App.PackageName 
+}
