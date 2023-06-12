@@ -132,7 +132,7 @@ Function Get-Admins{
     $admins = Get-MgDirectoryRole | Select-Object DisplayName, Id | 
                 %{$role = $_.DisplayName; Get-MgDirectoryRoleMember -DirectoryRoleId $_.id | 
                   where {$_.AdditionalProperties."@odata.type" -eq "#microsoft.graph.user"} | 
-                  % {Get-MgUser -userid $_.id | Where-Object {($_.AssignedLicenses).count -gt 0}}
+                  % {Get-MgUser -userid $_.id }
                 } | 
                 Select @{Name="Role"; Expression = {$role}}, DisplayName, UserPrincipalName, Mail, Id | Sort-Object -Property Mail -Unique
     
