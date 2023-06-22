@@ -155,7 +155,7 @@ Function Get-MailboxStats {
     $mailboxes | ForEach-Object {
 
       # Get mailbox size     
-      $mailboxSize = Get-EXOMailboxStatistics -identity $_.UserPrincipalName | Select-Object TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
+      $mailboxSize = Get-EXOMailboxStatistics -Identity $_.UserPrincipalName -Properties LastUserActionTime | Select-Object TotalItemSize,TotalDeletedItemSize,ItemCount,DeletedItemCount,LastUserActionTime
 
       if ($null -ne $mailboxSize) {
       

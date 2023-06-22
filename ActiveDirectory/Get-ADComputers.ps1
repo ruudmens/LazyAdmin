@@ -132,11 +132,11 @@ Function Get-AllADComputers {
 If ($CSVpath) {
   # Get mailbox status
   Get-AllADComputers | Sort-Object Name | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
-  if ((Get-Item $path).Length -gt 0) {
-    Write-Host "Report finished and saved in $path" -ForegroundColor Green
+  if ((Get-Item $CSVpath).Length -gt 0) {
+    Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
   
     # Open the CSV file
-    Invoke-Item $path
+    Invoke-Item $CSVpath
   
   }else{
     Write-Host "Failed to create report" -ForegroundColor Red
