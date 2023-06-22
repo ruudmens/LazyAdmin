@@ -211,6 +211,7 @@ elseif ($adminsOnly) {
       "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
       "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
       "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
+      "Alternative phone" = if ($msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber) {$msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber} else {"-"}
 			MFAEnforced = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
     }
   }
@@ -246,6 +247,7 @@ else {
 						MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
             "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
             "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
+            "Alternative phone" = if ($msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber) {$msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber} else {"-"}
           }
         }
       }else{
@@ -261,6 +263,7 @@ else {
           "Authenticator app" = if ($MsolUser.StrongAuthenticationMethods.MethodType -contains "PhoneAppNotification") {$true} else {"-"}
           "Email Verification" = if ($msoluser.StrongAuthenticationUserDetails.Email) {$msoluser.StrongAuthenticationUserDetails.Email} else {"-"}
           "Registered phone" = if ($msoluser.StrongAuthenticationUserDetails.PhoneNumber) {$msoluser.StrongAuthenticationUserDetails.PhoneNumber} else {"-"}
+          "Alternative phone" = if ($msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber) {$msoluser.StrongAuthenticationUserDetails.AlternativePhoneNumber} else {"-"}
 					MFAEnforced       = if ($MsolUser.StrongAuthenticationRequirements) {$true} else {"-"}
         }
       }
