@@ -54,6 +54,12 @@ param(
 
   [Parameter(
     Mandatory = $false,
+    HelpMessage = "Path to CSV file with email addresses"
+  )]
+  [string]$importCSV,
+
+  [Parameter(
+    Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
   [string]$CSVpath
@@ -89,7 +95,7 @@ Function ConnectTo-EXO {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name
 	    If (((@($psSessions) -like '@{State=Opened; Name=ExchangeOnlineInternalSession*').Count -gt 0) -ne $true) {
-		    Connect-ExchangeOnline -UserPrincipalName $adminUPN
+		    Connect-ExchangeOnline -UserPrincipalName $adminUPN -showBanner:$false
 	    }
     }
     else{
@@ -104,15 +110,26 @@ Function Get-Mailboxes {
         Get all the mailboxes for the report
   #>
   process {
-    switch ($sharedMailboxes)
-    {
-      "include" {$mailboxTypes = "UserMailbox,SharedMailbox"}
-      "only" {$mailboxTypes = "SharedMailbox"}
-      "no" {$mailboxTypes = "UserMailbox"}
-    }
+    if ($importCSV) {
+      write-host "Using import CSV for email address" -ForegroundColor cyan
 
-    Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
-      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
+      $mailboxes = Import-CSV -path $importCSV -Header 'emailaddress' 
+      
+      ForEach($mailbox in $mailboxes) {
+        Get-EXOMailbox -Identity $mailbox.emailaddress -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
+        Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
+      }
+    }else{
+      switch ($sharedMailboxes)
+      {
+        "include" {$mailboxTypes = "UserMailbox,SharedMailbox"}
+        "only" {$mailboxTypes = "SharedMailbox"}
+        "no" {$mailboxTypes = "UserMailbox"}
+      }
+
+      Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase | 
+        Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, IssueWarningQuota, ProhibitSendReceiveQuota, ArchiveQuota, ArchiveWarningQuota, ArchiveDatabase
+    }
   }
 }
 
@@ -149,9 +166,8 @@ Function Get-MailboxStats {
         Get the mailbox size and quota
   #>
   process {
-    $mailboxes = Get-Mailboxes
     $i = 0
-
+    $mailboxes = Get-Mailboxes 
     $mailboxes | ForEach-Object {
 
       # Get mailbox size     
