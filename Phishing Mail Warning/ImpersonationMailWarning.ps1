@@ -6,16 +6,16 @@
   Add warning to Outlook message when display name matches internal users
 
 .NOTES
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens - LazyAdmin.nl
   Creation Date:  11 oct 2021
-  Purpose/Change: Initial script development
+  Purpose/Change: Fix chunk loop and updating part
   Link:           https://lazyadmin.nl/office-365/warn-users-for-email-impersonation-phishing-mail
 #>
 
 # Connect to Exchange Online
 Write-Host "Connect to Exchange Online" -ForegroundColor Cyan
-Connect-ExchangeOnline
+Connect-ExchangeOnline -ShowBanner:$false
 
 $HTMLDisclaimer = '<table border=0 cellspacing=0 cellpadding=0 align="left" width="100%">
 	<tr>
@@ -31,6 +31,22 @@ $HTMLDisclaimer = '<table border=0 cellspacing=0 cellpadding=0 align="left" widt
 </table>
 <br/>'
 
+# Set the size of the chunk, recommend 100
+$chunkSize = 100
+
+Function Remove-ExistingRules {
+	param(
+    [Parameter(Mandatory = $true)]
+    [array]$rules
+  )
+  Foreach ($rule in $rules) {
+    Start-Sleep -s 2
+    Remove-TransportRule -identity $rule -Confirm:$true
+    Write-host "$($rule) deleted" -ForegroundColor Cyan
+
+  }
+}
+
 # Get all existing users
 $displayNames = (Get-EXOMailbox -ResultSize unlimited  -RecipientTypeDetails usermailbox).displayname
 
@@ -38,67 +54,80 @@ $displayNames = (Get-EXOMailbox -ResultSize unlimited  -RecipientTypeDetails use
 $transportRuleName = "Impersonation warning"
 
 # Get existing transport rule
-$existingTransportRule =  Get-TransportRule | Where-Object {$_.Name -eq $transportRuleName}
+$existingTransportRule =  Get-TransportRule | Where-Object {$_.Name -like $transportRuleName+"*"}
 
-$chunks = [System.Collections.ArrayList]::new()
-for ($i = 0; $i -lt $displayNames.Count; $i += 100) {
-    if (($displayNames.Count - $i) -gt 99  ) {
-        $chunks.add($displayNames[$i..($i + 99)])
-    }
-    else {
-        $chunks.add($displayNames[$i..($displayNames.Count - 1)])
-    }
+
+If ($null -ne ($existingTransportRule)){
+	Write-host "Existing impersonation rule(s) found" -ForegroundColor Cyan
+
+	if ($displayNames.Count -gt $chunkSize) {
+		# Updating chunks isn't possible, deleting existing rules
+		Write-host "Need to use multiple rules, deleting existing impersonation rules" -ForegroundColor Yellow
+		
+		Remove-ExistingRules -rules $existingTransportRule
+	}
 }
 
-$c = 0;
-foreach ($chunk in $chunks) {
-	Write-Host "Creating Transport Rule" -ForegroundColor Cyan
+# Creating multiple rules when we have more then 100 users
+if ($displayNames.Count -gt $chunkSize) {
 
-	# Create new Transport Rule
-	New-TransportRule -Name "$transportRuleName-$C" `
-										-FromScope NotInOrganization `
-										-SentToScope InOrganization `
-										-HeaderMatchesMessageHeader From `
-										-HeaderMatchesPatterns $chunks `
-										-ApplyHtmlDisclaimerLocation Prepend `
-										-ApplyHtmlDisclaimerText $HTMLDisclaimer `
-										-ApplyHtmlDisclaimerFallbackAction Wrap
+	$chunks = [System.Collections.ArrayList]::new()
+	for ($i = 0; $i -lt $displayNames.Count; $i += $chunkSize) {
+		if (($displayNames.Count - $i) -gt ($chunkSize -1)  ) {
+			$chunks.add($displayNames[$i..($i + ($chunkSize -1))])
+		}
+		else {
+			$chunks.add($displayNames[$i..($displayNames.Count - 1)])
+		}
+	}
 
-	Write-Host "Transport rule $c created" -ForegroundColor Green
-	$c++;
+  # Creating new transport rules using chunks
+  $c = 0;
+  foreach ($chunk in $chunks) {
+    Write-Host "Creating Transport Rule" -ForegroundColor Cyan
+
+    # Create new Transport Rule
+    New-TransportRule -Name "$transportRuleName-$C" `
+                      -FromScope NotInOrganization `
+                      -SentToScope InOrganization `
+                      -HeaderMatchesMessageHeader From `
+                      -HeaderMatchesPatterns $chunk `
+                      -ApplyHtmlDisclaimerLocation Prepend `
+                      -ApplyHtmlDisclaimerText $HTMLDisclaimer `
+                      -ApplyHtmlDisclaimerFallbackAction Wrap
+
+    Write-Host "Transport rule $c created" -ForegroundColor Green
+    $c++;
+  }
+}elseif($existingTransportRule) {
+  Write-Host "Update Transport Rule" -ForegroundColor Cyan
+
+  # Update existing Transport Rule
+  Set-TransportRule -Identity $transportRuleName `
+                    -FromScope NotInOrganization `
+                    -SentToScope InOrganization `
+                    -HeaderMatchesMessageHeader From `
+                    -HeaderMatchesPatterns $displayNames `
+                    -ApplyHtmlDisclaimerLocation Prepend `
+                    -ApplyHtmlDisclaimerText $HTMLDisclaimer `
+                    -ApplyHtmlDisclaimerFallbackAction Wrap
+
+  Write-Host "Transport rule updated" -ForegroundColor Green
 }
+else {
+  Write-Host "Creating Transport Rule" -ForegroundColor Cyan
 
-if ($existingTransportRule) 
-{
-	Write-Host "Update Transport Rule" -ForegroundColor Cyan
+  # Create new Transport Rule
+  New-TransportRule -Name $transportRuleName `
+                    -FromScope NotInOrganization `
+                    -SentToScope InOrganization `
+                    -HeaderMatchesMessageHeader From `
+                    -HeaderMatchesPatterns $displayNames `
+                    -ApplyHtmlDisclaimerLocation Prepend `
+                    -ApplyHtmlDisclaimerText $HTMLDisclaimer `
+                    -ApplyHtmlDisclaimerFallbackAction Wrap
 
-	# Update existing Transport Rule
-	Set-TransportRule -Identity $transportRuleName `
-										-FromScope NotInOrganization `
-										-SentToScope InOrganization `
-										-HeaderMatchesMessageHeader From `
-										-HeaderMatchesPatterns $displayNames `
-										-ApplyHtmlDisclaimerLocation Prepend `
-										-ApplyHtmlDisclaimerText $HTMLDisclaimer `
-										-ApplyHtmlDisclaimerFallbackAction Wrap
-
-	Write-Host "Transport rule updated" -ForegroundColor Green
-}
-else 
-{
-	Write-Host "Creating Transport Rule" -ForegroundColor Cyan
-
-	# Create new Transport Rule
-	New-TransportRule -Name $transportRuleName `
-										-FromScope NotInOrganization `
-										-SentToScope InOrganization `
-										-HeaderMatchesMessageHeader From `
-										-HeaderMatchesPatterns $displayNames `
-										-ApplyHtmlDisclaimerLocation Prepend `
-										-ApplyHtmlDisclaimerText $HTMLDisclaimer `
-										-ApplyHtmlDisclaimerFallbackAction Wrap
-
-	Write-Host "Transport rule created" -ForegroundColor Green
+  Write-Host "Transport rule created" -ForegroundColor Green
 }
 
 # Close Exchange Online Connection
