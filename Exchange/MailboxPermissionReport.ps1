@@ -165,8 +165,8 @@ Function Get-SingleUser {
     $identity
   )
 
-  Get-Mailbox -Identity $identity -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress | 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
+  Get-Mailbox -Identity $identity | 
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
 }
 
 Function Get-Mailboxes {
@@ -182,8 +182,8 @@ Function Get-Mailboxes {
       "no" {$mailboxTypes = "UserMailbox"}
     }
 
-    Get-Mailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress| 
-      select UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
+    Get-Mailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes  | 
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
   }
 }
 
@@ -201,7 +201,7 @@ Function Get-SendOnBehalf {
 
   # Get Send on Behalf
   $SendOnBehalfAccess = @();
-  if ($mailbox.GrantSendOnBehalfTo -ne $null) {
+  if ($null -ne $mailbox.GrantSendOnBehalfTo) {
     
     # Get a proper displayname of each user
     $mailbox.GrantSendOnBehalfTo | ForEach {
@@ -245,7 +245,8 @@ Function Get-FullAccessPermissions {
     $identity
   )
   
-  $users = Get-MailboxPermission -Identity $identity | ?{($_.IsInherited -eq $False) -and -not ($_.User -match "NT AUTHORITY")} |Select User,Identity,@{Name="AccessRights";Expression={$_.AccessRights}} | % {$_.User}
+  $users = Get-MailboxPermission -Identity $identity | Where-Object {($_.IsInherited -eq $False) -and -not ($_.User -match "NT AUTHORITY")} | 
+    Select User,Identity,@{Name="AccessRights";Expression={$_.AccessRights}} | ForEach-Object {$_.User}
 
   $fullaccessUsers = @();
   
@@ -274,7 +275,8 @@ Function Get-FolderPermissions {
 
   Try {
     $ErrorActionPreference = "Stop"; #Make all errors terminating
-    $users = Get-MailboxFolderPermission -Identity "$($identity):\$($folder)" | where { -not ($_.User -match "Default") -and -not ($_.AccessRights -match "None")}
+    $users = Get-MailboxFolderPermission -Identity "$($identity):\$($folder)" | 
+      Where-Object { -not ($_.User -match "Default") -and -not ($_.AccessRights -match "None")}
   }
   Catch{
     Write-Error "Unable to get Mailbox folder permission $folder"
