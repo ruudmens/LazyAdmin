@@ -12,9 +12,14 @@
 .NOTES
   Name: Domain Controller Health 
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.0
+  Version: 1.1
   DateCreated: Oct 2023
-  Purpose/Change: Init
+  Purpose/Change: 
+    - Removed WMIObject in line 31
+    - Check network adapter for DNS position 1
+    - Added note for DCDIAG (supports only english results for now)
+    - Determine replication interval on (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
+    - Removed Repadmin
 
 .LINK
   https://lazyadmin.nl
@@ -28,18 +33,18 @@ $outputToConsole = $true
 $outputToHtml = $false
 
 # Scripts needs to be run on a domain controller
-If (-not (Get-WmiObject -Query "SELECT * FROM Win32_OperatingSystem where ProductType = 2")) {
+If (-not (Get-CimInstance -Query "SELECT * FROM Win32_OperatingSystem where ProductType = 2")) {
     write-host "The scripts needs to be run on a domain controller." -ForegroundColor red
     break
 }
 
 # Check DNS configuration 
-Function Get-DCDNSConfiguration($hostname) {
+Function Get-DCDNSConfiguration($computername) {
 
     $DNSResult = "Success"
 
     try {
-        $ipAddressDC = Resolve-DnsName $hostname -Type A -ErrorAction Stop | select -ExpandProperty IPAddress 
+        $ipAddressDC = Resolve-DnsName $computername -Type A -ErrorAction Stop | select -ExpandProperty IPAddress 
     }
     catch [exception] {
         $DNSResult = "Failed"
@@ -47,10 +52,10 @@ Function Get-DCDNSConfiguration($hostname) {
     }
 
     # Check DNS Server configuration
-    $activeNetAdapter = Get-NetAdapter -CimSession $hostname | Where {$_.Status -eq 'Up'} | select -ExpandProperty InterfaceIndex
-    $DnsServers = Get-DnsClientServerAddress -CimSession $hostname -InterfaceIndex $activeNetAdapter | select -ExpandProperty ServerAddresses
+    $activeNetAdapter = Get-NetAdapter -CimSession $computername | Where {$_.Status -eq 'Up'} | select -ExpandProperty InterfaceIndex
+    $DnsServers = Get-DnsClientServerAddress -CimSession $computername -InterfaceIndex $activeNetAdapter | select -ExpandProperty ServerAddresses
 
-    if ($DnsServers -contains $ipAddressDC) {
+    if ($DnsServers[0] -contains $ipAddressDC -or $DnsServers[0] -eq "127.0.0.1" -or $DnsServers[0] -eq "::0") {
         $DNSResult = "Failed"
         $DNSResultReason = "Incorrect DNS server configured"
         $DNSResultLink = "https://lazyadmin.nl/it/add-domain-controller-to-existing-domain/#configure-dns-servers"
@@ -60,13 +65,13 @@ Function Get-DCDNSConfiguration($hostname) {
 }
 
 # Test the latency to the domain controller
-Function Test-DCPing ($hostname) {
+Function Test-DCPing ($computername) {
 
     if ($Host.Version.Major -gt 7) {
-        $latency = Test-Connection -ComputerName $hostname -Count 1 -ErrorAction SilentlyContinue | 
+        $latency = Test-Connection -ComputerName $computername -Count 1 -ErrorAction SilentlyContinue | 
         Select -ExpandProperty latency
     }else{
-        $latency = Test-Connection -ComputerName $hostname -Count 1 -ErrorAction SilentlyContinue | 
+        $latency = Test-Connection -ComputerName $computername -Count 1 -ErrorAction SilentlyContinue | 
         Select -ExpandProperty ResponseTime
     }
 
@@ -84,10 +89,10 @@ Function Test-DCPing ($hostname) {
 }
 
 # Get the uptime of the DC in hour or days
-Function Get-DCUpTime($hostname) {
+Function Get-DCUpTime($computername) {
 
     try {
-        $uptime = (Get-Date) - (Get-CimInstance Win32_OperatingSystem -ComputerName $hostname).LastBootupTime
+        $uptime = (Get-Date) - (Get-CimInstance Win32_OperatingSystem -ComputerName $computername).LastBootupTime
     }
     catch [exception] {
         $uptimeResult = "Failed"
@@ -116,9 +121,9 @@ Function Get-FSMORoles{
     [cmdletbinding()]
     Param(
         [parameter(Mandatory=$true)]
-        $dc,
+        [System.Object]$dc,
         [parameter(Mandatory=$false)]
-        $fsmoCheckPassed
+        [bool]$fsmoCheckPassed
     )
     if (!$fsmoCheckPassed) {
         if ($dc.OperationMasterRoles.count -eq 5) {
@@ -156,14 +161,14 @@ Function Get-FSMORoles{
 }
 
 # Check the free space on the OS Drive
-Function Get-FreeSpaceOS ($hostname) {
+Function Get-FreeSpaceOS ($computername) {
 
     # Get the system drive (commonly this is the c: drive)
     # To optimize the script you can also remove the Get-CimInstance and replace it with c:
     try {
-        $systemDrive = (Get-CimInstance -Computername $hostname Win32_OperatingSystem | Select -ExpandProperty SystemDrive).Trim(":")
+        $systemDrive = (Get-CimInstance -Computername $computername Win32_OperatingSystem | Select -ExpandProperty SystemDrive).Trim(":")
 
-        $freeSpace = [Math]::Round(((Get-Volume -CimSession $hostname -DriveLetter $systemDrive).SizeRemaining / 1GB),2)
+        $freeSpace = [Math]::Round(((Get-Volume -CimSession $computername -DriveLetter $systemDrive).SizeRemaining / 1GB),2)
 
         if ($freeSpace -gt '5' -and $freeSpace -lt 10) {
             $freeSpaceResult = "Warning"
@@ -199,7 +204,7 @@ Function Get-ADDatabaseSize() {
 }
 
 # Check if the NTDS, ADWS, DNS, DNScache, KDC, Netlogon and W32Time services are running
-Function Get-DCServices($hostname) {
+Function Get-DCServices($computername) {
 
     $services = @(
         'EventSystem',
@@ -217,7 +222,7 @@ Function Get-DCServices($hostname) {
         'netlogon'
         )
 
-    $stoppedServices = Invoke-Command -Computername $hostname -ScriptBlock {Get-Service -Name $using:services | where {$_.Status -eq 'Stopped'}}
+    $stoppedServices = Invoke-Command -Computername $computername -ScriptBlock {Get-Service -Name $using:services | where {$_.Status -eq 'Stopped'}}
 
     if ($stoppedServices.length -gt 0) {
         $servicesResults = "Failed"
@@ -231,10 +236,11 @@ Function Get-DCServices($hostname) {
 }
 
 # Run DCDiag tests
-# Based on  : httpNew-s://www.powershellbros.com/using-powershell-perform-dc-health-checks-dcdiag-repadmin/
-function Get-DCDiagResults($hostname) {
+# Note : Test may fail if your OS is not in English. Needs different patterns depening on Local Culture
+# Based on : httpNew-s://www.powershellbros.com/using-powershell-perform-dc-health-checks-dcdiag-repadmin/
+function Get-DCDiagResults($computername) {
     # Skips services, we already checked them
-    $DcdiagOutput = Invoke-Command -Computername $hostname -ScriptBlock {Dcdiag.exe /skip:services}
+    $DcdiagOutput = Invoke-Command -Computername $computername -ScriptBlock {Dcdiag.exe /skip:services}
     
     if ($DcdiagOutput) {
         $Results = New-Object PSCustomObject
@@ -259,8 +265,8 @@ function Get-DCDiagResults($hostname) {
     return $Results
 }
 
-function Get-ReplicationData($hostname) {
-    $repPartnerData = Get-ADReplicationPartnerMetadata -Target $hostname
+function Get-ReplicationData($computername) {
+    $repPartnerData = Get-ADReplicationPartnerMetadata -Target $computername
 
     $replResult = @{}
 
@@ -270,9 +276,10 @@ function Get-ReplicationData($hostname) {
     # Last attempt
     $replResult.lastRepAttempt = @()
     $replLastRepAttempt = $repPartnerData.LastReplicationAttempt
-    if (((Get-Date) - $replLastRepAttempt).Minutes -gt 15) {
+    $replFrequency = (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
+    if (((Get-Date) - $replLastRepAttempt).Minutes -gt $replFrequency) {
         $replResult.lastRepAttempt += "Warning"
-        $replResult.lastRepAttempt += "More then 15 minutes ago - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
+        $replResult.lastRepAttempt += "More then $replFrequency minutes ago - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
     }else{
         $replResult.lastRepAttempt += "Success - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
     }
@@ -280,16 +287,16 @@ function Get-ReplicationData($hostname) {
     # Last successfull replication
     $replResult.lastRepSuccess = @()
     $replLastRepSuccess = $repPartnerData.LastReplicationSuccess
-    if (((Get-Date) - $replLastRepSuccess).Minutes -gt 180) {
+    if (((Get-Date) - $replLastRepSuccess).Minutes -gt $replFrequency) {
         $replResult.lastRepSuccess += "Warning"
-        $replResult.lastRepSuccess += "More then 15 minutes ago - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
+        $replResult.lastRepSuccess += "More then $replFrequency minutes ago - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
     }else{
         $replResult.lastRepSuccess += "Success - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
     }
 
     # Get failure count
     $replResult.failureCount = @()
-    $replFailureCount = (Get-ADReplicationFailure -Target $hostname).FailureCount
+    $replFailureCount = (Get-ADReplicationFailure -Target $computername).FailureCount
     if ($null -eq $replFailureCount) { 
         $replResult.failureCount += "Success"
     }else{
@@ -298,43 +305,22 @@ function Get-ReplicationData($hostname) {
     }
 
     # Get replication results
-    $repSummary = repadmin.exe /replsummary $hostname
+    $replDelta = (Get-Date) - $replLastRepAttempt
 
-    if ($repSummary) {
-        # Split the text into lines
-        $lines = $repSummary -split [Environment]::NewLine
-
-        # Initialize an array to store results
-        $results = @()
-
-        # Loop through the lines to find lines with expected format
-        $replResult.delta = @()
-        foreach ($line in $lines) {
-            # Check if the line has the expected format (e.g., 4 columns)
-            if ($line -match '^\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\d+\s+$') {
-                # Get the delta time from the string
-                if ($line -match '\d+m:\d+s' -or $line -match ':\d+s') {
-                    $replDelta = $matches[0]
-                }
-            }
-        }
-        $delta = [TimeSpan]::ParseExact($replDelta, "m\m\:s\s", $null)
-    
-        # Check if the delta is greater than 180 minutes (3 hours)
-        if ($delta.TotalMinutes -gt 180) {
-            $replResult.delta += "Failed"
-            $replResult.delta += "Delta is more then 180 minutes - $replDelta"
-        }else{
-            $replResult.delta += "Success - $replDelta"
-        }
+    # Check if the delta is greater than 180 minutes (3 hours)
+    if ($replDelta.TotalMinutes -gt $replFrequency) {
+        $replResult.delta += "Failed"
+        $replResult.delta += "Delta is more then 180 minutes - $($replDelta.Minutes)"
+    }else{
+        $replResult.delta += "Success - $($replDelta.Minutes) minutes"
     }
 
     return $replResult
 }
 
-function Get-TimeDifference($hostname) {
+function Get-TimeDifference($computername) {
     # credits: https://stackoverflow.com/a/63050189
-    $currentTime, $timeDifference = (& w32tm /stripchart /computer:$hostname /samples:1 /dataonly)[-1].Trim("s") -split ',\s*'
+    $currentTime, $timeDifference = (& w32tm /stripchart /computer:$computername /samples:1 /dataonly)[-1].Trim("s") -split ',\s*'
     $diff = [double]$timeDifference
 
     if ($diff -ge 1) {
@@ -393,8 +379,13 @@ function Write-HostColored{
             Write-Host "Passed" -ForegroundColor green
         }
     }else{
-        Write-Host ("{0,-31} : " -f $label) -NoNewline
-        Write-Host $status -ForegroundColor White
+        if ($status -like 'Success*') {
+            Write-Host ("{0,-31} : " -f $label) -NoNewline
+            Write-Host $status -ForegroundColor Green
+        }else {
+            Write-Host ("{0,-31} : " -f $label) -NoNewline
+            Write-Host $status -ForegroundColor White
+        }
     }
 }
 # Prepare for the DC tests
@@ -430,7 +421,7 @@ ForEach ($domainController in $allDomainControllers) {
     }
 
     # Get replication data
-    $repData = Get-ReplicationData -hostname $dc.Hostname
+    $repData = Get-ReplicationData -computername $dc.Hostname
 
     # Get FSMO Roles
     $fsmo = Get-FSMORoles -dc $dc -fsmoCheckPassed $fsmoResult
@@ -442,18 +433,18 @@ ForEach ($domainController in $allDomainControllers) {
     $currentDC."OS Version" = $dc.OperatingSystemVersion
     $currentDC."Ip Address" = $dc.IPv4Address
     $currentDC."FMSO Roles" = if ($fsmo.length -gt 1) {$fsmo[0], $fsmo[1]} else {$fsmo}
-    $currentDC."DNS" = Get-DCDNSConfiguration -hostname $dc.HostName
-    $currentDC."Ping" = Test-DCPing -hostname $dc.HostName
-    $currentDC."Uptime" = Get-DCUpTime -hostname $dc.HostName
-    $currentDC."OS Free Space (Gb)" =  Get-FreeSpaceOS -hostname $dc.HostName
+    $currentDC."DNS" = Get-DCDNSConfiguration -computername $dc.HostName
+    $currentDC."Ping" = Test-DCPing -computername $dc.HostName
+    $currentDC."Uptime" = Get-DCUpTime -computername $dc.HostName
+    $currentDC."OS Free Space (Gb)" =  Get-FreeSpaceOS -computername $dc.HostName
     $currentDC."AD DB Size (Gb)" = Get-ADDatabaseSize
-    $currentDC."Services running" = Get-DCServices -hostname $dc.HostName
-    $currentDC."DCDIAG" = Get-DCDiagResults -hostname $dc.HostName
+    $currentDC."Services running" = Get-DCServices -computername $dc.HostName
+    $currentDC."DCDIAG" = Get-DCDiagResults -computername $dc.HostName
     $currentDC."Replication Partner" = $repData.repPartner
     $currentDC."Replication Last attempt" = $repData.lastRepAttempt
     $currentDC."Replication Last success" = $repData.lastRepSuccess
     $currentDC."Replication Delta" = $repData.delta
-    $currentDC."Time offset" = Get-TimeDifference -hostname $dc.HostName
+    $currentDC."Time offset" = Get-TimeDifference -computername $dc.HostName
 
     $dcResults += $currentDC
 }
