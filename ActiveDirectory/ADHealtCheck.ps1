@@ -12,14 +12,12 @@
 .NOTES
   Name: Domain Controller Health 
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.1
+  Version: 1.2
   DateCreated: Oct 2023
   Purpose/Change: 
-    - Removed WMIObject in line 31
-    - Check network adapter for DNS position 1
-    - Added note for DCDIAG (supports only english results for now)
-    - Determine replication interval on (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
-    - Removed Repadmin
+    - Fix Test-Connection for PS7
+    - Fix failed FSMO Role connection test
+    - Catch error in retrieving replication data
 
 .LINK
   https://lazyadmin.nl
@@ -67,7 +65,7 @@ Function Get-DCDNSConfiguration($computername) {
 # Test the latency to the domain controller
 Function Test-DCPing ($computername) {
 
-    if ($Host.Version.Major -gt 7) {
+    if ($Host.Version.Major -ge 7) {
         $latency = Test-Connection -ComputerName $computername -Count 1 -ErrorAction SilentlyContinue | 
         Select -ExpandProperty latency
     }else{
@@ -147,7 +145,7 @@ Function Get-FSMORoles{
 
             $combinedInfo.PSObject.Properties | Foreach {
                 If ($_.Value -ne $dc.hostname) {
-                    if (!Test-Connection -ComputerName $_.Value -Count 1 -Quiet) {
+                    if (!Test-Connection -ComputerName $_.Value -Count 1 -Quiet -ErrorAction SilentlyContinue) {
                         $FSMOResult = "Failed"
                         $FSMOReason = "Unable to reach $($_.key) - $($_.Value)"
                     }
@@ -274,45 +272,57 @@ function Get-ReplicationData($computername) {
     $replResult.repPartner = ($RepPartnerData.Partner -split ',')[1] -replace 'CN=', '';
 
     # Last attempt
-    $replResult.lastRepAttempt = @()
-    $replLastRepAttempt = $repPartnerData.LastReplicationAttempt
-    $replFrequency = (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
-    if (((Get-Date) - $replLastRepAttempt).Minutes -gt $replFrequency) {
-        $replResult.lastRepAttempt += "Warning"
-        $replResult.lastRepAttempt += "More then $replFrequency minutes ago - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
-    }else{
-        $replResult.lastRepAttempt += "Success - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
-    }
+    try {
+        $replResult.lastRepAttempt = @()
+        $replLastRepAttempt = $repPartnerData.LastReplicationAttempt
+        $replFrequency = (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
+        if (((Get-Date) - $replLastRepAttempt).Minutes -gt $replFrequency) {
+            $replResult.lastRepAttempt += "Warning"
+            $replResult.lastRepAttempt += "More then $replFrequency minutes ago - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
+        }else{
+            $replResult.lastRepAttempt += "Success - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
+        }
 
-    # Last successfull replication
-    $replResult.lastRepSuccess = @()
-    $replLastRepSuccess = $repPartnerData.LastReplicationSuccess
-    if (((Get-Date) - $replLastRepSuccess).Minutes -gt $replFrequency) {
-        $replResult.lastRepSuccess += "Warning"
-        $replResult.lastRepSuccess += "More then $replFrequency minutes ago - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
-    }else{
-        $replResult.lastRepSuccess += "Success - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
-    }
+        # Last successfull replication
+        $replResult.lastRepSuccess = @()
+        $replLastRepSuccess = $repPartnerData.LastReplicationSuccess
+        if (((Get-Date) - $replLastRepSuccess).Minutes -gt $replFrequency) {
+            $replResult.lastRepSuccess += "Warning"
+            $replResult.lastRepSuccess += "More then $replFrequency minutes ago - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
+        }else{
+            $replResult.lastRepSuccess += "Success - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
+        }
 
-    # Get failure count
-    $replResult.failureCount = @()
-    $replFailureCount = (Get-ADReplicationFailure -Target $computername).FailureCount
-    if ($null -eq $replFailureCount) { 
-        $replResult.failureCount += "Success"
-    }else{
+        # Get failure count
+        $replResult.failureCount = @()
+        $replFailureCount = (Get-ADReplicationFailure -Target $computername).FailureCount
+        if ($null -eq $replFailureCount) { 
+            $replResult.failureCount += "Success"
+        }else{
+            $replResult.failureCount += "Failed"
+            $replResult.failureCount += "$replFailureCount failed attempts"
+        }
+
+        # Get replication results
+        $replDelta = (Get-Date) - $replLastRepAttempt
+
+        # Check if the delta is greater than 180 minutes (3 hours)
+        if ($replDelta.TotalMinutes -gt $replFrequency) {
+            $replResult.delta += "Failed"
+            $replResult.delta += "Delta is more then 180 minutes - $($replDelta.Minutes)"
+        }else{
+            $replResult.delta += "Success - $($replDelta.Minutes) minutes"
+        }
+    }
+    catch [exception]{
+        $replResult.lastRepAttempt += "Failed"
+        $replResult.lastRepAttempt += "Unable to retrieve replication data"
+        $replResult.lastRepSuccess += "Failed"
+        $replResult.lastRepSuccess += "Unable to retrieve replication data"
         $replResult.failureCount += "Failed"
-        $replResult.failureCount += "$replFailureCount failed attempts"
-    }
-
-    # Get replication results
-    $replDelta = (Get-Date) - $replLastRepAttempt
-
-    # Check if the delta is greater than 180 minutes (3 hours)
-    if ($replDelta.TotalMinutes -gt $replFrequency) {
+        $replResult.failureCount += "Unable to retrieve replication data"
         $replResult.delta += "Failed"
-        $replResult.delta += "Delta is more then 180 minutes - $($replDelta.Minutes)"
-    }else{
-        $replResult.delta += "Success - $($replDelta.Minutes) minutes"
+        $replResult.delta += "Unable to retrieve replication data"
     }
 
     return $replResult
