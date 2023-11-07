@@ -12,12 +12,10 @@
 .NOTES
   Name: Domain Controller Health 
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.2
+  Version: 1.3
   DateCreated: Oct 2023
   Purpose/Change: 
-    - Fix Test-Connection for PS7
-    - Fix failed FSMO Role connection test
-    - Catch error in retrieving replication data
+    - Fix line 148
 
 .LINK
   https://lazyadmin.nl
@@ -145,7 +143,7 @@ Function Get-FSMORoles{
 
             $combinedInfo.PSObject.Properties | Foreach {
                 If ($_.Value -ne $dc.hostname) {
-                    if (!Test-Connection -ComputerName $_.Value -Count 1 -Quiet -ErrorAction SilentlyContinue) {
+                    if (!(Test-Connection -ComputerName $_.Value -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
                         $FSMOResult = "Failed"
                         $FSMOReason = "Unable to reach $($_.key) - $($_.Value)"
                     }
