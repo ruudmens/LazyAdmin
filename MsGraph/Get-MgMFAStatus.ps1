@@ -13,9 +13,9 @@
 .NOTES
   Name: Get-MgMFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.1
+  Version: 1.2
   DateCreated: Jun 2022
-  Purpose/Change: Add Directory.Read.All scope
+  Purpose/Change: Added MFA preferred method
 
 .LINK
   https://lazyadmin.nl
@@ -117,10 +117,7 @@ Function ConnectTo-MgGraph {
 
   # Connect to Graph
   Write-Host "Connecting to Microsoft Graph" -ForegroundColor Cyan
-  Connect-MgGraph -Scopes "User.Read.All, UserAuthenticationMethod.Read.All, Directory.Read.All"
-
-  # Select the beta profile
-  Select-MgProfile Beta
+  Connect-MgGraph -Scopes "User.Read.All, UserAuthenticationMethod.Read.All, Directory.Read.All" -NoWelcome
 }
 
 Function Get-Admins{
@@ -223,11 +220,12 @@ Function Get-MFAMethods {
       phoneAuth         = "-"
       fido              = "-"
       helloForBusiness  = "-"
+      helloForBusinessCount = 0
       emailAuth         = "-"
       tempPass          = "-"
       passwordLess      = "-"
       softwareAuth      = "-"
-      authDevice        = "-"
+      authDevice        = ""
       authPhoneNr       = "-"
       SSPREmail         = "-"
     }
@@ -237,7 +235,7 @@ Function Get-MFAMethods {
           "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod"  { 
             # Microsoft Authenticator App
             $mfaMethods.authApp = $true
-            $mfaMethods.authDevice = $method.AdditionalProperties["displayName"] 
+            $mfaMethods.authDevice += $method.AdditionalProperties["displayName"] 
             $mfaMethods.status = "enabled"
           } 
           "#microsoft.graph.phoneAuthenticationMethod"                  { 
@@ -262,6 +260,7 @@ Function Get-MFAMethods {
             $mfaMethods.helloForBusiness = $true
             $helloForBusinessDetails = $method.AdditionalProperties["displayName"]
             $mfaMethods.status = "enabled"
+            $mfaMethods.helloForBusinessCount++
           } 
           "#microsoft.graph.emailAuthenticationMethod"                   { 
             # Email Authentication
@@ -325,6 +324,16 @@ Function Get-MFAStatusUsers {
       $mfaMethods = Get-MFAMethods -userId $_.id
       $manager = Get-Manager -userId $_.id
 
+       $uri = "https://graph.microsoft.com/beta/users/$($_.id)/authentication/signInPreferences"
+       $mfaPreferredMethod = Invoke-MgGraphRequest -uri $uri -Method GET
+
+       if ($null -eq ($mfaPreferredMethod.userPreferredMethodForSecondaryAuthentication)) {
+        # When an MFA is configured by the user, then there is alway a preferred method
+        # So if the preferred method is empty, then we can assume that MFA isn't configured
+        # by the user
+        $mfaMethods.status = "disabled"
+       }
+
       if ($withOutMFAOnly) {
         if ($mfaMethods.status -eq "disabled") {
           [PSCustomObject]@{
@@ -344,7 +353,7 @@ Function Get-MFAStatusUsers {
           UserPrincipalName = $_.UserPrincipalName
           isAdmin = if ($listAdmins -and ($admins.UserPrincipalName -match $_.UserPrincipalName)) {$true} else {"-"}
           "MFA Status" = $mfaMethods.status
-        # "MFA Default type" = ""  - Not yet supported by MgGraph
+          "MFA Preferred method" = $mfaPreferredMethod.userPreferredMethodForSecondaryAuthentication
           "Phone Authentication" = $mfaMethods.phoneAuth
           "Authenticator App" = $mfaMethods.authApp
           "Passwordless" = $mfaMethods.passwordLess
