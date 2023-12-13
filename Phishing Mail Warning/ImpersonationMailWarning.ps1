@@ -23,7 +23,7 @@ $HTMLDisclaimer = '<table border=0 cellspacing=0 cellpadding=0 align="left" widt
 		<td width="100%" cellpadding="7px 6px 7px 15px" style="background:#fff8e5;padding:5pt 4pt 5pt 12pt;word-wrap:break-word">
 			<div style="color:#222222;">
 				<span style="color:#222; font-weight:bold;">Warning:</span>
-				This email was sent from outside the company and it has the same display name as someone inside our organisation. This is probably a phishing mail. Do not click on links or open attachments
+				This email was sent from outside the company, and it has the same display name as someone inside our organization. This is probably a phishing mail. Do not click on links or open attachments
 				unless you are certain that this email is safe.
 			</div>
 		</td>
