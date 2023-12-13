@@ -272,8 +272,9 @@ function Get-ReplicationData($computername) {
     # Last attempt
     try {
         $replResult.lastRepAttempt = @()
-        $replLastRepAttempt = $repPartnerData.LastReplicationAttempt
-        $replFrequency = (Get-ADReplicationSiteLink -Filter *).ReplicationFrequencyInMinutes
+        $replLastRepAttempt = ($repPartnerData | Where-Object {$_.Partner -match ($replResult.repPartner)}).LastReplicationAttempt
+        $replFrequency = (Get-ADReplicationSiteLink -Filter *)[0].ReplicationFrequencyInMinutes
+        
         if (((Get-Date) - $replLastRepAttempt).Minutes -gt $replFrequency) {
             $replResult.lastRepAttempt += "Warning"
             $replResult.lastRepAttempt += "More then $replFrequency minutes ago - $($replLastRepAttempt.ToString('yyyy-MM-dd HH:mm'))"
@@ -283,7 +284,7 @@ function Get-ReplicationData($computername) {
 
         # Last successfull replication
         $replResult.lastRepSuccess = @()
-        $replLastRepSuccess = $repPartnerData.LastReplicationSuccess
+        $replLastRepSuccess = ($repPartnerData | Where-Object {$_.Partner -match ($replResult.repPartner)}).LastReplicationSuccess
         if (((Get-Date) - $replLastRepSuccess).Minutes -gt $replFrequency) {
             $replResult.lastRepSuccess += "Warning"
             $replResult.lastRepSuccess += "More then $replFrequency minutes ago - $($replLastRepSuccess.ToString('yyyy-MM-dd HH:mm'))"
