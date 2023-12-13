@@ -1,26 +1,34 @@
 <#
 .SYNOPSIS
   Create report of all mailbox permissions
+
 .DESCRIPTION
   Get all mailbox permissions, including folder permissions for all or a selected group of users
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com
   Generate the mailbox report with Shared mailboxes, store the csv file in the script root location.
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -sharedMailboxes only
   Get only the shared mailboxes
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -sharedMailboxes no
   Get only the user mailboxes
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -folderPermissions:$false
   Get the mailbox permissions without the folder (inbox and calendar) permissions
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -UserPrincipalName jane@contoso.com,alex@contoso.com
   Get the mailbox permissions for a selection of users
+
 .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -displayNames:$false
   Don't get the full displayname for each permissions (to speed up the script)
+  
  .EXAMPLE
   .\MailboxPermissionReport.ps1 -adminUPN john@contoso.com -csvFile "c:\temp\mailboxusers.csv"
 
@@ -212,8 +220,10 @@ Function Get-Mailboxes {
       "no" {$mailboxTypes = "UserMailbox"}
     }
 
-    Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress| 
+    Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress | 
       Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
+      | Where-Object {$_.PrimarySMTPAddress -notcontains "@student.domain.edu"}
+
   }
 }
 
