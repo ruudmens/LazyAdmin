@@ -187,7 +187,12 @@ Function Get-MailboxStats {
         }
 
         # Get Sent Items 
-        $sentItems = Get-EXOMailboxFolderStatistics -Identity $_.UserPrincipalName -Folderscope sentitems | Select-Object ItemsInFolderAndSubfolders,@{Name = "sentItemSize"; Expression = {$_.FolderAndSubfolderSize.ToString().Split("(")[0]}}
+        $sentItems = Get-EXOMailboxFolderStatistics -Identity $_.UserPrincipalName -Folderscope sentitems | Where-Object {
+          $_.FolderPath -eq "/Sent Items"
+        } | Select-Object ItemsInFolderAndSubfolders,@{
+          Name = "sentItemSize"; 
+          Expression = {$_.FolderAndSubfolderSize.ToString().Split("(")[0]}
+        }
     
         [pscustomobject]@{
           "Display Name" = $_.DisplayName
