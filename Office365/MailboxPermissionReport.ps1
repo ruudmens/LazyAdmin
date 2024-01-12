@@ -221,8 +221,8 @@ Function Get-Mailboxes {
     }
 
     Get-EXOMailbox -ResultSize unlimited -RecipientTypeDetails $mailboxTypes -Properties GrantSendOnBehalfTo, ForwardingSMTPAddress | 
-      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress
-      | Where-Object {$_.PrimarySMTPAddress -notcontains "@student.domain.edu"}
+      Select-Object UserPrincipalName, DisplayName, PrimarySMTPAddress, RecipientType, RecipientTypeDetails, GrantSendOnBehalfTo, ForwardingSMTPAddress | 
+      Where-Object {$_.PrimarySMTPAddress -notcontains "@student.domain.edu"}
 
   }
 }
