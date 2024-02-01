@@ -7,10 +7,10 @@
 .OUTPUTS
   CSV with Active Direct
 .NOTES
-  Version:        1.2
+  Version:        1.3
   Author:         R. Mens
   Creation Date:  24 may 2022
-  Purpose/Change: Fix enabled/disable filter
+  Purpose/Change: Small type in comments
 .EXAMPLE
   Get all AD computers from the whole Domain
    .\Get-ADComputers.ps1 -csvpath c:\temp\computers.csv
@@ -51,9 +51,7 @@ Function Get-Computers {
       Get computers from the requested DN
     #>
     param(
-      [Parameter(
-        Mandatory = $true
-      )]
+      [Parameter(Mandatory = $true)]
       $dn
     )
     process{
@@ -97,17 +95,16 @@ Function Get-AllADComputers {
     # Collect computers
     if ($searchBase) {
       # Get the requested mailboxes
-       foreach ($dn in $searchBase) {
-         Write-Host "- Get computers in $dn" -ForegroundColor Cyan
-         $computers += Get-Computers -dn $dn
-       }
-     }else{
-       # Get distinguishedName of the domain
-       $dn = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
-       Write-Host "- Get computers in $dn" -ForegroundColor Cyan
-       $computers += Get-Computers -dn $dn
-     }
- 
+      foreach ($dn in $searchBase) {
+        Write-Host "- Get computers in $dn" -ForegroundColor Cyan
+        $computers += Get-Computers -dn $dn
+      }
+      }else{
+        # Get distinguishedName of the domain
+        $dn = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
+        Write-Host "- Get computers in $dn" -ForegroundColor Cyan
+        $computers += Get-Computers -dn $dn
+      }
 
     # Loop through all computers
     $computers | ForEach-Object {
@@ -130,7 +127,7 @@ Function Get-AllADComputers {
 }
 
 If ($CSVpath) {
-  # Get mailbox status
+  # Get all AD Computers
   Get-AllADComputers | Sort-Object Name | Export-CSV -Path $CSVpath -NoTypeInformation -Encoding UTF8
   if ((Get-Item $CSVpath).Length -gt 0) {
     Write-Host "Report finished and saved in $CSVpath" -ForegroundColor Green
