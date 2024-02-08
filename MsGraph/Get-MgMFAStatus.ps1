@@ -324,15 +324,21 @@ Function Get-MFAStatusUsers {
       $mfaMethods = Get-MFAMethods -userId $_.id
       $manager = Get-Manager -userId $_.id
 
-       $uri = "https://graph.microsoft.com/beta/users/$($_.id)/authentication/signInPreferences"
-       $mfaPreferredMethod = Invoke-MgGraphRequest -uri $uri -Method GET
+      $uri = "https://graph.microsoft.com/beta/users/$($_.id)/authentication/signInPreferences"
 
-       if ($null -eq ($mfaPreferredMethod.userPreferredMethodForSecondaryAuthentication)) {
+      try{
+        $mfaPreferredMethod = Invoke-MgGraphRequest -uri $uri -Method GET -ErrorAction Continue
+      }
+      catch {
+        $mfaPreferredMethod = "Unable to retrieve"
+      }
+      
+      if ($null -eq ($mfaPreferredMethod.userPreferredMethodForSecondaryAuthentication)) {
         # When an MFA is configured by the user, then there is alway a preferred method
         # So if the preferred method is empty, then we can assume that MFA isn't configured
         # by the user
         $mfaMethods.status = "disabled"
-       }
+      }
 
       if ($withOutMFAOnly) {
         if ($mfaMethods.status -eq "disabled") {
