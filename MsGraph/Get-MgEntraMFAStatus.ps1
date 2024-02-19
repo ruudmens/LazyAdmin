@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MgEntraMFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.0
+  Version: 1.1
   DateCreated: Feb 2024
-  Purpose/Change: Added MFA preferred method
+  Purpose/Change: Remove the beta cmdlet
 
 .LINK
   https://lazyadmin.nl
@@ -188,7 +188,7 @@ Function Get-MFAStatusUsers {
     $users = Get-Users
     
     # Get all MFA Report data
-    $reportData = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail
+    $reportData = Get-MgReportAuthenticationMethodUserRegistrationDetail
 
     Write-Host "Processing" $users.count "users" -ForegroundColor Cyan
 
