@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MgEntraMFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.1
+  Version: 1.2
   DateCreated: Feb 2024
-  Purpose/Change: Remove the beta cmdlet
+  Purpose/Change: Fixed licensed and enabled users
 
 .LINK
   https://lazyadmin.nl
@@ -39,24 +39,18 @@ param(
   [Parameter(
     Mandatory         = $false,
     ValueFromPipeline = $false,
-    ParameterSetName  = "Licensed"
+    ParameterSetName  = "allUsers"
   )]
+  [Alias("Licensed")]
+  [ValidateSet("true", "false", "both")]
   # Check only the MFA status of users that have license
-  [switch]$IsLicensed = $true,
-
-  [Parameter(
-    Mandatory         = $false,
-    ValueFromPipeline = $false,
-    ParameterSetName  = "Enabled"
-  )]
-  # Get enabled, disabled or both
-  [string]$enabled = 'both',
+  [string]$IsLicensed = 'true',
 
   [Parameter(
     Mandatory         = $false,
     ValueFromPipeline = $true,
     ValueFromPipelineByPropertyName = $true,
-    ParameterSetName  = "withOutMFAOnly"
+    ParameterSetName  = "allUsers"
   )]
   # Get only the users that don't have MFA enabled
   [switch]$withOutMFAOnly = $false,
@@ -114,15 +108,11 @@ Function Get-Users {
   )
 
   $properties = $select + "AssignedLicenses"
-
-  # Get enabled, disabled or both users
-  switch ($enabled)
-  {
-    "true" {$filter = "AccountEnabled eq true and UserType eq 'member'"}
-    "false" {$filter = "AccountEnabled eq false and UserType eq 'member'"}
-    "both" {$filter = "UserType eq 'member'"}
-  }
   
+  # Get-MgBetaReportAuthenticationMethodUserRegistrationDetail returns only enabled accounts
+  # so we get only enabled accounts here as well.
+  $filter = "AccountEnabled eq true and UserType eq 'member'"
+
   # Check if UserPrincipalName(s) are given
   if ($UserPrincipalName) {
     Write-host "Get specific users" -ForegroundColor Cyan
@@ -142,19 +132,20 @@ Function Get-Users {
         }
       }
     }
-  }elseif($adminsOnly)
-  {
+  }elseif($adminsOnly) {
     Write-host "Get admins only" -ForegroundColor Cyan
 
     $users = @()
     foreach ($admin in $admins) {
       $users += Get-MgUser -UserId $admin.UserPrincipalName -Property $properties | select $select
     }
-  }else
-  {
-    if ($IsLicensed) {
+  }else{
+    if ($IsLicensed -eq 'true') {
       # Get only licensed users
       $users = Get-MgUser -Filter $filter -Property $properties -all | Where-Object {($_.AssignedLicenses).count -gt 0} | select $select
+    }elseif ($IsLicensed -eq 'false') {
+      # Get only users without license
+      $users = Get-MgUser -Filter $filter -Property $properties -all | Where-Object {($_.AssignedLicenses).count -eq 0} | select $select
     }else{
       $users = Get-MgUser -Filter $filter -Property $properties -all | select $select
     }
@@ -203,7 +194,7 @@ Function Get-MFAStatusUsers {
       }
 
       Write-Host "- Processing $($reportUser.UserDisplayName)" -ForegroundColor Cyan
-
+    
       # Get the user data from the users array
       $userData = $users | where-object {$_.UserPrincipalName -eq $reportUser.UserPrincipalName}
 
