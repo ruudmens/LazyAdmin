@@ -150,6 +150,7 @@ Function Get-Users {
       $users = Get-MgUser -Filter $filter -Property $properties -all | select $select
     }
   }
+  Write-Verbose "Retrieved $($users.count) users"
   return $users
 }
 
@@ -190,6 +191,7 @@ Function Get-MFAStatusUsers {
       # Note - it's faster to get all report data and then filter it on the selected users, 
       # then getting the report data for each individual user
       if ($reportUser.UserPrincipalName -notin $users.UserPrincipalName) {
+        write-verbose "Skipping $($reportUser.UserPrincipalName)"
         continue
       }
 
