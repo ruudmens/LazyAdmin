@@ -29,13 +29,13 @@ param(
     Mandatory = $true,
     HelpMessage = "Enter your SharePoint Admin URL. For exampl https://contoso-admin.sharepoint.com"
   )]
-  [string]$url,
+  [string]$url = "",
 
   [Parameter(
     Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
-  [string]$path = ".\MailboxSizeReport-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
+  [string]$path = ".\OneDriveSizeReport-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
 )
 
 Function ConnectTo-SharePoint {
@@ -79,10 +79,8 @@ Function ConvertTo-Gb {
         Convert mailbox size to Gb for uniform reporting.
   #>
   param(
-    [Parameter(
-      Mandatory = $true
-    )]
-    [string]$size
+    [Parameter(Mandatory = $true)]
+    [int]$size
   )
   process {
     if ($size -ne $null) {
