@@ -17,12 +17,11 @@
 
   Logonname is firstname+lastname@domain.com 
 
-  Company info for emailsignature will be pulled out of the companies.json file. You can at here as many companies / offices 
+  Company info for emailsignature will be pulled out of the companies.json file. You can add here as many companies / offices 
   as you like. During the account creation you will be asked witch account to use.
 
   Microsoft 365 licenses are assigned using group based licensing: https://lazyadmin.nl/office-365/office-365-assign-license-to-group/
-  Script will check how many licenses are available in your tenant. In the config file you can configure the 
-  Microsoft 365 license name (AccountSkuId), check them with Get-MsolAccountSku
+  In the config file you can configure the Microsoft 365 license name (AccountSkuId)
 
   After user is created, it will force the Azure AD sync. Once completed it will force MFA on the user account.
 
@@ -37,9 +36,9 @@
 .OUTPUTS
   New Active Directory user
 .NOTES
-  Version:        1.7
+  Version:        1.8
   Author:         R. Mens - LazyAdmin.nl
-  Creation Date:  26 januari 2017
+  Creation Date:  11 july 2024
   Purpose/Change: Script cleanup
   
 .EXAMPLE
@@ -68,26 +67,12 @@ $companyList = $companies.psobject.properties.name
 Write-Host "                    -------------------------------------------------            " -ForegroundColor Cyan
 Write-Host "                    |                                               |						" -ForegroundColor Cyan
 Write-Host "                    |               Create new AD User              |						" -ForegroundColor Cyan
-Write-Host "                    |                  Version 1.7                  |						" -ForegroundColor Cyan
+Write-Host "                    |                  Version 1.8                  |						" -ForegroundColor Cyan
 Write-Host "                    |                                               |						" -ForegroundColor Cyan
 Write-Host "                    |          Author R. Mens - LazyAdmin.nl        |						" -ForegroundColor Cyan
 Write-Host "                    |                                               |						" -ForegroundColor Cyan
 Write-Host "                    -------------------------------------------------            " -ForegroundColor Cyan
 Write-Host "`n"
-
-Function Get-MsolConnection {
-  Get-MsolDomain -ErrorAction SilentlyContinue | out-null
-  $result = $?
-  return $result
-}
-
-# Connect to Microsoft Online Services
-If (-not (Get-MsolConnection)) {
-  Write-Host "Connect to Microsoft Online Services..." -ForegroundColor Cyan
-  Connect-MsolService
-}else{
-  Write-Host "Already connected to Microsoft Online Services" -ForegroundColor Green
-}
 
 #-----------------------------------------------------------[Functions]------------------------------------------------------------
 Function New-DomainUserAccount
@@ -103,15 +88,35 @@ Function New-DomainUserAccount
     [bool]$whatIf
   )
     PROCESS{
+      $userDetails = @{
+        Instance              = $templateUser
+        GivenName             = $user.givenName 
+        Surname               = $user.surName 
+        Name                  = $user.fullName
+        DisplayName           = $user.fullName
+        EmailAddress          = $user.userPrincipalName
+        StreetAddress         = $company.StreetAddress
+        PostalCode            = $company.PostalCode
+        city                  = $company.city
+        Office                = $company.Name
+        HomePage              = $company.website
+        OfficePhone           = $user.telephoneNumber
+        MobilePhone           = $user.telephoneNumber
+        title                 = $user.mobilePhone
+        manager               = $manager.title
+        SamAccountName        = $user.samAccountName 
+        UserPrincipalName     = $user.userPrincipalName 
+        AccountPassword       = (ConvertTo-SecureString -AsPlainText $config.Settings.password -force)
+        Enabled               = $true
+        ChangePasswordAtLogon = $true
+        PasswordNeverExpires  = $false
+        PassThru              = $true
+        Path                  = $company.OU
+        WhatIf                = $whatif
+
+    }
       Try	{
-        Return New-ADUser -SamAccountName $user.samAccountName -name $user.fullName `
-              -DisplayName $user.fullName -GivenName $user.givenName -Surname $user.surName `
-              -EmailAddress $user.userPrincipalName -UserPrincipalName $user.userPrincipalName `
-              -manager $manager.SamAccountName -StreetAddress $company.StreetAddress -PostalCode $company.PostalCode -City $company.city`
-              -Office $company.Name -OfficePhone $user.telephoneNumber -MobilePhone $user.mobilePhone -title $user.title `
-              -HomePage $company.WebSite  `
-              -Enabled $true -ChangePasswordAtLogon $true -PasswordNeverExpires $false -PassThru `
-              -AccountPassword (ConvertTo-SecureString -AsPlainText $config.Settings.password -force) -Path $company.OU -WhatIf:$whatif
+        Return New-ADUser @userDetails
       } Catch {
         Write-Error "Could not create user $($user.samAccountName), $_"
         Return $false
@@ -252,9 +257,7 @@ Function Get-ServiceDeskEmailTemplate
     [parameter(Mandatory=$true)]
     $user,
     [parameter(Mandatory=$true)]
-    $manager,
-    [parameter(Mandatory=$true)]
-    $availableLicenses
+    $manager
   )
 
   PROCESS
@@ -265,8 +268,7 @@ Function Get-ServiceDeskEmailTemplate
       -replace '{{user.UserPrincipalName}}', $user.UserPrincipalname `
       -replace '{{user.Password}}', $config.Settings.password `
       -replace '{{user.fullname}}', $user.fullName `
-      -replace '{{user.firstname}}', $user.givenName `
-      -replace '{{availableLicenses}}', $availableLicenses `
+      -replace '{{user.firstname}}', $user.givenName
     } | Out-String	
     
     return $mailTemplate
@@ -472,17 +474,6 @@ Function Set-GroupMemberShip
 }
 
 <#
-  Get available Microsoft 365 licenses
-#>
-Function Get-AvailableLicenses
-{
-  PROCESS {
-    $licenseDetails = Get-MsolAccountSku | Where-Object {$_.AccountSkuId -eq $config.Settings.AccountSkuId}
-    return $licenseDetails.ActiveUnits - $licenseDetails.ConsumedUnits
-  }
-}
-
-<#
   Get all job titles
 #> 
 Function Get-AllJobTitles
@@ -496,7 +487,6 @@ Function Get-AllJobTitles
     return Get-Aduser -Filter * -SearchBase $company.OU -Properties title | Select-Object title -Unique | Sort-Object -property title
   }
 }
-
 
 #
 # ------------------- Start Script ----------------------#
@@ -591,11 +581,8 @@ If ($userCreated -or $whatIf -eq $true) {
     $title = "Copy group membership?"
     $message = "Do you want to copy the group membership from " + $userToCopyFrom.name + " ?"
 
-    $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
-      "Yes"
-
-    $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
-      "No"
+    $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
+    $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
 
     $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
     $copyMembership = $host.ui.PromptForChoice($title, $message, $options, 0) 
@@ -619,8 +606,7 @@ If ($userCreated -or $whatIf -eq $true) {
   write-host "`n"
   Write-Host 'Notifying servicedesk....' -ForegroundColor Cyan
 
-  $availableLicenses = Get-AvailableLicenses
-  $sdEmailBody = Get-ServiceDeskEmailTemplate -user $user -manager $manager -availableLicenses $availableLicenses
+  $sdEmailBody = Get-ServiceDeskEmailTemplate -user $user -manager $manager
   Send-MailtoServiceDesk -user $user -manager $manager -EmailBody $sdEmailBody -whatIf $whatIf
 
   # [OPTIONAL] Sync AD's
@@ -636,24 +622,6 @@ If ($userCreated -or $whatIf -eq $true) {
 
   # Run sync command on remote domain controller
   # Invoke-Command -ComputerName lazy-srv-dc02 -ScriptBlock {Start-ADSyncSyncCycle -PolicyType Delta}
-
-  $sa = New-Object -TypeName Microsoft.Online.Administration.StrongAuthenticationRequirement
-  $sa.RelyingParty = "*"
-  $sa.State = "Enabled"
-  $sar = @($sa)
-
-  Do {
-    Write-Host "...Waiting for AzureAD sync to complete - 15sec" -ForegroundColor Yellow
-    Start-Sleep -s 15
-    $msolUser = Get-MsolUser -UserPrincipalName $user.userPrincipalName -ErrorAction SilentlyContinue
-  }	While ($null -eq $msolUser)
-
-  Write-Host "Sync completed" -ForegroundColor Green
-
-  # Enable MFA for new user
-  write-host "`n"
-  Write-Host "Forcing MFA for new user...." -ForegroundColor Cyan
-  Set-MsolUser -UserPrincipalName $user.userPrincipalName -StrongAuthenticationRequirements $sar -ErrorAction Stop
 
   # User created
   write-host "`n"
