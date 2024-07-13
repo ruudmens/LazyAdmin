@@ -72,7 +72,7 @@ Write-Host "                    |                                               
 Write-Host "                    |          Author R. Mens - LazyAdmin.nl        |						" -ForegroundColor Cyan
 Write-Host "                    |                                               |						" -ForegroundColor Cyan
 Write-Host "                    -------------------------------------------------            " -ForegroundColor Cyan
-Write-Host "`n"
+Write-Host "`r"
 
 #-----------------------------------------------------------[Functions]------------------------------------------------------------
 Function New-DomainUserAccount
@@ -362,10 +362,10 @@ Function Get-Manager
     $manager = Get-AdUser -Filter {name -like $managerName} -Properties *
 
     If ($Null -eq $manager) {
-      Write-Warning "Manager with $name not found `n"
+      Write-Warning "Manager with $name not found `r"
       return $false
     } ElseIf ($manager.count -gt 1) {
-      Write-Warning "Multiple users found, select the correct user `n"
+      Write-Warning "Multiple users found, select the correct user `r"
       $managers = $manager
       
       $chooseManager = @()
@@ -400,7 +400,7 @@ Function Get-JobTitle
     $usr = Get-ADUser -Filter {(title -eq $title) -and (city -eq $city)} | Sort-Object whenChanged | Select-Object -Last 1
 
     If ($Null -eq $usr) {
-      Write-Warning "No user found with same jobTitle : $title `n"
+      Write-Warning "No user found with same jobTitle : $title `r"
       $allTitles = Get-AllJobTitles($company)
 
       Do {
@@ -438,11 +438,11 @@ Function Get-UserToCopyGroupsFrom
     $company
   )
   PROCESS {
-    $usr = Get-ADUser -Filter {(title -eq $user.title) -and (userPrincipalName -ne $user.userPrincipalName)} -SearchBase $company.ou | 
+    $usr = Get-ADUser -Filter "title -eq '$($user.title)' -and userPrincipalName -ne '$($user.userPrincipalName)'" -SearchBase $company.ou | 
             Sort-Object whenChanged | Select-Object -Last 1
 
     If ($Null -eq $usr) {
-      Write-Warning "No user found with same jobTitle : $user.title `n"
+      Write-Warning "No user found with same jobTitle : $user.title `r"
       return $false
     } Else {
       return $usr
@@ -492,21 +492,21 @@ Function Get-AllJobTitles
 # ------------------- Start Script ----------------------#
 #
 if ($whatIf) {
-  Write-Host "`n"
   Write-Host "   RUNNING IN TEST MODE   "  -BackgroundColor Yellow -ForegroundColor Black
+  Write-Host "`r"
 }
 
 # Creating a new user object
 $user = @{}	
 
 # Gathering required details
-Write-Host "`n"
 Write-Host "Gathering user information...." -ForegroundColor Cyan
 Write-Host "Enter the name of the user."
 
 $user.givenName = Read-Host "Firstname"
 $user.surName = Read-Host "LastName"
 
+Write-Host "`r"
 Write-Host "Enter the phonenumber of the user when known"
 
 $user.telephoneNumber = Read-Host "Phone number"
@@ -533,6 +533,7 @@ If ($companyList.Count -gt 1) {
 }
 
 # Set the manager of the user
+Write-Host "`r"
 $managerName = Read-Host "Who is the manager of the user. Search on first, last or fullname"
 $manager = Get-Manager -name $managerName
 
@@ -541,18 +542,18 @@ $user.samAccountName = Get-SamAccountName -givenName $user.givenName -surname $u
 $user.userPrincipalName = Get-UserPrincipalName -samAccountName $user.samAccountName -company $company
 
 # Job Title
-write-host "`n"
+Write-Host "`r"
 write-host "What is the job title of the new user."
 
 $title = Read-Host "Title"
 
-write-host "`n"
+write-host "`r"
 write-host "Checking if job title exists...." -ForegroundColor Cyan
 
 $user.title = Get-JobTitle -title $title -company $company
   
 # Create the account
-write-host "`n"
+write-host "`r"
 Write-Host 'Creating User account in AD....' -ForegroundColor Cyan
 if ($whatIf) {
   Write-Host "Running in test mode, user won't be created" -ForegroundColor Yellow
@@ -563,14 +564,18 @@ $userCreated = New-DomainUserAccount -user $user -manager $manager -company $com
 # Only continue when account is created or when running in whatif (test) mode
 If ($userCreated -or $whatIf -eq $true) {
   Write-Host 'User succesfully created' -ForegroundColor Green
-  write-Host "`n"
   Write-Host 'Setting additional user settings....' -ForegroundColor Cyan
 
   # [OPTIONAL] Set additional attributes
   # Set-ExtensionAttributes -samAccountName $user.samAccountName -companyPhone $company.phone -companyWebsite $company.WebSite -whatIf:$whatIf
     
   # Copy Group Membership
-  $createdUser = Get-AdUser -Identity $user.SamAccountName -Properties *
+  if ($whatIf -ne $true) {
+    $createdUser = Get-AdUser -Identity $user.SamAccountName -Properties *
+  }else{
+    # Using input data to mimic created user
+    $createdUser = $user
+  }
 
   # Find user to copy group membership from
   $userToCopyFrom = Get-UserToCopyGroupsFrom -user $createdUser -company $company
@@ -596,14 +601,12 @@ If ($userCreated -or $whatIf -eq $true) {
   }
   
   # Send email to manager
-  write-host "`n"
   Write-Host 'Notifying manager....' -ForegroundColor Cyan
 
   $emailBody = Get-EmailTemplate -user $user -Manager $manager
   Send-MailtoManager -user $user -manager $manager -EmailBody $emailBody -whatIf $whatIf
 
   # Send mail to servicedesk
-  write-host "`n"
   Write-Host 'Notifying servicedesk....' -ForegroundColor Cyan
 
   $sdEmailBody = Get-ServiceDeskEmailTemplate -user $user -manager $manager
@@ -614,7 +617,6 @@ If ($userCreated -or $whatIf -eq $true) {
   # Repadmin /syncall /AdeP
 
   # Force Sync of user to Office 365
-  write-host "`n"
   Write-Host "Syncing Azure AD Connect...." -ForegroundColor Cyan
   
   # Run command on local domain controller
@@ -624,8 +626,7 @@ If ($userCreated -or $whatIf -eq $true) {
   # Invoke-Command -ComputerName lazy-srv-dc02 -ScriptBlock {Start-ADSyncSyncCycle -PolicyType Delta}
 
   # User created
-  write-host "`n"
-  Write-Host "   User succesfully created   " -BackgroundColor Green -ForegroundColor White
+  Write-Host "   User succesfully created   " -BackgroundColor DarkGreen -ForegroundColor white
 }else{
   Write-Host "Unable to create user" -ForegroundColor Red
 }
