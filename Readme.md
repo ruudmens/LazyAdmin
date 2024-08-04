@@ -11,7 +11,7 @@ Launch PowerShell and make sure Set-ExecutionPolicy is set to RemoteSigned or By
 Learn how to write your own PowerShell script with this complete guide: https://lazyadmin.nl/powershell/powershell-script/
 
 # Contribution
-Create a fork of the project into your own reposity. Make all your necessary changes and create a pull request with a description on what was added or removed and details explaining the changes in lines of code. If approved, I will merge it.
+Create a fork of the project into your own repository. Make all your necessary changes and create a pull request with a description on what was added or removed and details explaining the changes in lines of code. If approved, I will merge it.
 
 # Licensing
 Licensed under the MIT License (the “License”); you may not use this file except in compliance with the License. 
