@@ -1,0 +1,9 @@
+[submodule "Invoke-CommandAs"]
+	path = Invoke-CommandAs
+	url = https://github.com/mkellerman/Invoke-CommandAs
+[submodule "powershell-web-browser-management-"]
+	path = powershell-web-browser-management-
+	url = https://github.com/philipprochazka/powershell-web-browser-management-
+[submodule "winutil"]
+	path = winutil
+	url = https://github.com/ChrisTitusTech/winutil
