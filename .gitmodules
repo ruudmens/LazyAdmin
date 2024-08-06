@@ -7,3 +7,6 @@
 [submodule "winutil"]
 	path = winutil
 	url = https://github.com/ChrisTitusTech/winutil
+[submodule "windows-registry"]
+	path = windows-registry
+	url = https://github.com/letsdoautomation/windows-registry/
