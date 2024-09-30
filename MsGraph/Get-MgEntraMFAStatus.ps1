@@ -10,9 +10,9 @@
 .NOTES
   Name: Get-MgEntraMFAStatus
   Author: R. Mens - LazyAdmin.nl
-  Version: 1.2
+  Version: 1.3
   DateCreated: Feb 2024
-  Purpose/Change: Fixed licensed and enabled users
+  Purpose/Change: Added System Preferred Method
 
 .LINK
   https://lazyadmin.nl
@@ -72,6 +72,18 @@ Function ConnectTo-MgGraph {
       Install-Module Microsoft.Graph -Repository PSGallery -Scope CurrentUser -AllowClobber -Force
     }else{
       Write-Host "Microsoft Graph module is required." -ForegroundColor Black -BackgroundColor Yellow
+      exit
+    } 
+  }
+
+  if (-not(Get-InstalledModule Microsoft.Graph.Beta.Reports)) { 
+    Write-Host "Microsoft Graph Beta Reports module not found" -ForegroundColor Black -BackgroundColor Yellow
+    $install = Read-Host "Do you want to install the Microsoft Graph Beta Reports Module?"
+
+    if ($install -match "[yY]") {
+      Install-Module Microsoft.Graph.Beta.Reports -Repository PSGallery -Scope CurrentUser -AllowClobber -Force
+    }else{
+      Write-Host "Microsoft Graph Beta Reports module is required." -ForegroundColor Black -BackgroundColor Yellow
       exit
     } 
   }
@@ -214,6 +226,7 @@ Function Get-MFAStatusUsers {
         "MFA Default method" = $reportUser.DefaultMfaMethod
         "MFA Secondary method" = $reportUser.UserPreferredMethodForSecondaryAuthentication
         "MFA Methods Registered" = $reportUser.MethodsRegistered -join ", "
+        "System Preferred method" = $reportUser.SystemPreferredAuthenticationMethods -join ", "
         "Passwordless Capable" = $reportUser.IsPasswordlessCapable
         "SSPR Registered" = $reportUser.IsSsprRegistered
         "SSPR Capable" = $reportUser.IsSsprCapable
