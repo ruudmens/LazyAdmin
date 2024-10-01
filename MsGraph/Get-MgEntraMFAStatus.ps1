@@ -192,7 +192,7 @@ Function Get-MFAStatusUsers {
     $users = Get-Users
     
     # Get all MFA Report data
-    $reportData = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail
+    $reportData = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail -All
 
     Write-Host "Processing" $users.count "users" -ForegroundColor Cyan
 
