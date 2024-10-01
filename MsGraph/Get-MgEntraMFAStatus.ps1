@@ -224,7 +224,7 @@ Function Get-MFAStatusUsers {
         "isAdmin" = $reportUser.IsAdmin
         "MFA Capable" = $reportUser.IsMfaCapable
         "MFA Default method" = $reportUser.DefaultMfaMethod
-        "MFA Secondary method" = $reportUser.UserPreferredMethodForSecondaryAuthentication
+        "MFA Preferred method" = $reportUser.UserPreferredMethodForSecondaryAuthentication
         "MFA Methods Registered" = $reportUser.MethodsRegistered -join ", "
         "System Preferred method" = $reportUser.SystemPreferredAuthenticationMethods -join ", "
         "Passwordless Capable" = $reportUser.IsPasswordlessCapable
