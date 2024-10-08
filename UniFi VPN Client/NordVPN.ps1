@@ -64,6 +64,16 @@ Test-WireGuard
 Write-Host "Getting the Private key"
 $privateKey = curl -s -u token:$accessToken "https://api.nordvpn.com/v1/users/services/credentials" | ConvertFrom-Json | Select-Object -ExpandProperty nordlynx_private_key
 
+<# Alternative method for Step 5 
+$token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(“token:$accessToken”))
+$headers = @{
+Authorization = “Basic $token”
+}
+
+$response = Invoke-RestMethod -Uri “https://api.nordvpn.com/v1/users/services/credentials” -Headers $headers -Method Get
+$privateKey = $response.nordlynx_private_key
+#>
+
 # Step 6 - Get the information for the configuration file
 $listenPort = wg show NordLynx listen-port
 $publicKey = wg show NordLynx public-key
