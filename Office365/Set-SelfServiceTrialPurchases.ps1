@@ -15,7 +15,6 @@ param(
         Mandatory         = $true,
         ValueFromPipeline = $true
     )]
-    [Alias("selfServiceSetting")]
     [ValidateSet("enabled","disabled", "OnlyTrialsWithoutPaymentMethod")]
     # Set the self service setting
     [string]$selfServiceSetting = 'disabled'
@@ -37,8 +36,13 @@ Function ConnectTo-MSCommerce {
   
     # Connect to MSCommerce
     Write-Host "Connecting to MSCommerce" -ForegroundColor Cyan
-    Connect-MSCommerce
+
+    # Need to return the the connection results for the session token :\
+    return Connect-MSCommerce
 }
+
+# Connect to MSCommerce
+Connect-MSCommerce
 
 $products = $null
 $products = Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase | Where-Object {$_.PolicyValue -ne $selfServiceSetting}
