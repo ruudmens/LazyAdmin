@@ -90,7 +90,7 @@ Function ConnectTo-MgGraph {
 
   # Connect to Graph
   Write-Host "Connecting to Microsoft Graph" -ForegroundColor Cyan
-  Connect-MgGraph -Scopes "Reports.Read.All" -NoWelcome
+  Connect-MgGraph -Scopes "Reports.Read.All", "AuditLog.Read.All" -NoWelcome
 }
 
 
@@ -192,7 +192,8 @@ Function Get-MFAStatusUsers {
     $users = Get-Users
     
     # Get all MFA Report data
-    $reportData = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail -All
+    $reportData = Get-MgReportAuthenticationMethodUserRegistrationDetail -All
+
 
     Write-Host "Processing" $users.count "users" -ForegroundColor Cyan
 
