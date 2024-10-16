@@ -63,12 +63,12 @@ Test-WireGuard
 # Step 5 - Get the Private Key 
 Write-Host "Getting the Private key"
 
-$token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(“token:$accessToken”))
+$token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("token:$accessToken"))
 $headers = @{
-Authorization = “Basic $token”
+    Authorization = "Basic $token"
 }
 
-$response = Invoke-RestMethod -Uri “https://api.nordvpn.com/v1/users/services/credentials” -Headers $headers -Method Get
+$response = Invoke-RestMethod -Uri "https://api.nordvpn.com/v1/users/services/credentials" -Headers $headers -Method Get
 $privateKey = $response.nordlynx_private_key
 
 # Alternative method for Step 5 
