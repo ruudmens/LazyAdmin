@@ -72,7 +72,7 @@ $response = Invoke-RestMethod -Uri "https://api.nordvpn.com/v1/users/services/cr
 $privateKey = $response.nordlynx_private_key
 
 # Alternative method for Step 5 
-$privateKey = curl -s -u token:$accessToken "https://api.nordvpn.com/v1/users/services/credentials" | ConvertFrom-Json | Select-Object -ExpandProperty nordlynx_private_key
+# $privateKey = curl -s -u token:$accessToken "https://api.nordvpn.com/v1/users/services/credentials" | ConvertFrom-Json | Select-Object -ExpandProperty nordlynx_private_key
 
 # Step 6 - Get the information for the configuration file
 $listenPort = wg show NordLynx listen-port
