@@ -308,7 +308,7 @@ function Get-ReplicationData($computername) {
         # Check if the delta is greater than 180 minutes (3 hours)
         if ($replDelta.TotalMinutes -gt $replFrequency) {
             $replResult.delta += "Failed"
-            $replResult.delta += "Delta is more then 180 minutes - $($replDelta.Minutes)"
+            $replResult.delta += " Delta is more than 180 minutes - $($replDelta.Minutes)"
         }else{
             $replResult.delta += "Success - $($replDelta.Minutes) minutes"
         }
