@@ -1,4 +1,4 @@
-Connect-ExchangeOnline -UserPrincipalName ryanfrenz@StandleyBatch.onmicrosoft.com
+Connect-ExchangeOnline -UserPrincipalName johndoe@contoso.com
 
 $MailboxStorage = Get-Mailbox -ResultSize Unlimited | ForEach-Object {
     $PrimaryStats = Get-MailboxStatistics $_.Identity
