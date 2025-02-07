@@ -50,6 +50,9 @@ Function Remove-ExistingRules {
 # Get all existing users
 $displayNames = (Get-EXOMailbox -ResultSize unlimited  -RecipientTypeDetails usermailbox).displayname
 
+#sort the display names
+$displaynames = $displayNames | Sort-Object
+
 # Set the transport rule name
 $transportRuleName = "Impersonation warning"
 
@@ -128,6 +131,22 @@ else {
                     -ApplyHtmlDisclaimerFallbackAction Wrap
 
   Write-Host "Transport rule created" -ForegroundColor Green
+}
+
+# Get the transport rules again so we can open a browser directly to it (only link to the first rule found)
+$existingTransportRule = Get-TransportRule | Where-Object {$_.Name -like $transportRuleName+"*"} | Select-Object -First 1
+
+#build the URL
+$urlPrefix = "https://admin.exchange.microsoft.com/#/transportrules/:/ruleDetails/"
+$ruleURL = $urlPrefix + $existingtransportrule.Guid + "/viewinflyoutpanel"
+
+# Open a browser to the Transport Rule
+write-host "Rule URL: " -NoNewline
+write-host $ruleURL -ForegroundColor Cyan
+$OpenInProwser = Read-Host Open browser to URL? [Y] Yes [N] No 
+
+if ($OpenInProwser -match "[yY]") {
+  Start-Process $ruleURL
 }
 
 # Close Exchange Online Connection

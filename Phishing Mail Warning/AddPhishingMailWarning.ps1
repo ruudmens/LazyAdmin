@@ -19,7 +19,7 @@ $HTMLDisclaimer = '<table border=0 cellspacing=0 cellpadding=0 align="left" widt
 Write-Host "Creating Transport Rule" -ForegroundColor Cyan
 
 # Create new Transport Rule
-New-TransportRule -Name "External Email Warning test" `
+New-TransportRule -Name "Phishing Warning" `
 									-FromScope NotInOrganization `
 									-SentToScope InOrganization `
 									-SubjectOrBodyMatchesPatterns (Get-Content $PSScriptRoot\PhishingPatterns.txt) `
