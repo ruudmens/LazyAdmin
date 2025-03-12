@@ -96,6 +96,13 @@ param(
 
   [Parameter(
     Mandatory = $false,
+    HelpMessage = "Get accounts that are enabled, disabled or both"
+  )]
+    [ValidateSet("true", "false", "both")]
+  [string]$enabled = "true",
+
+  [Parameter(
+    Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
   [string]$path = ".\MFAStatus-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
