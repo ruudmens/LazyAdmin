@@ -17,10 +17,10 @@
 
 .NOTES
   Name:           Get-OneDriveSizeReport
-  Version:        1.0
+  Version:        1.1
   Author:         R. Mens - LazyAdmin.nl
-  Creation Date:  27 sep 2021
-  Purpose/Change: Initial script development
+  Creation Date:  31 march 2025
+  Purpose/Change: Fix interactive login
   Link:           https://lazyadmin.nl/powershell/onedrive-storage-metrics-report
 #>
 
@@ -30,6 +30,12 @@ param(
     HelpMessage = "Enter your SharePoint Admin URL. For exampl https://contoso-admin.sharepoint.com"
   )]
   [string]$url = "",
+
+  [Parameter(
+    Mandatory = $true,
+    HelpMessage = "Cliend Id - Of your PnP Application in Microsoft Entra"
+  )]
+  [string]$clientId = "",
 
   [Parameter(
     Mandatory = $false,
@@ -65,7 +71,7 @@ Function ConnectTo-SharePoint {
 
     if ((Get-Module -ListAvailable -Name PnP.PowerShell) -ne $null) 
     {
-	    Connect-PnPOnline -Url $url -Interactive
+	    Connect-PnPOnline -Url $url -Interactive -ClientId $clientId
     }
     else{
       Write-Error "Please install PnP PowerShell module."
