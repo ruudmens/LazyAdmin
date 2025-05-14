@@ -37,7 +37,7 @@ if ($null -eq (Get-PrinterPort -name $printerPortName)) {
 
 try {
   # Add the printer
-  Add-Printer -Name printerName -DriverName $driverName -PortName $printerPortName
+  Add-Printer -Name $printerName -DriverName $driverName -PortName $printerPortName
 } catch {
   Write-Host $_.Exception.Message -ForegroundColor Red
 }
