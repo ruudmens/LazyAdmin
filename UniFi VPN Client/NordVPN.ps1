@@ -78,11 +78,16 @@ $privateKey = $response.nordlynx_private_key
 $listenPort = wg show NordLynx listen-port
 $publicKey = wg show NordLynx public-key
 
-$preSharedKey = (wg show NordLynx preshared-keys) -replace '\s+\(none\)$', '' -replace '\s+$', ''
-
 $endPointRaw = wg show NordLynx endpoints
-$ipRegex = [regex]'\b(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}\b'
-$endPoint = ($ipRegex.Match($endPointRaw)).Value
+foreach ($line in $endPointRaw){
+    $pattern = '(?m)^(?<key>[A-Za-z0-9+\/=]+).*?(?<ip>(?:\d{1,3}\.){3}\d{1,3}:51820)'
+    $match = [regex]::Match($line, $pattern)
+
+    if ($match.Success) {
+        $preSharedKey = $match.Groups['key'].Value
+        $endPoint = $match.Groups['ip'].Value
+    }
+}
 
 # Step 7 - Create the WireGuard Configuration file
 $fileName = Read-Host "Enter a name for the configuration file"
