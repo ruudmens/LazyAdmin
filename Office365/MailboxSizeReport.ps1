@@ -75,17 +75,17 @@ Function ConnectTo-EXO {
     # Check if EXO is installed and connect if no connection exists
     if ($null -eq (Get-Module -ListAvailable -Name ExchangeOnlineManagement))
     {
-      Write-Host "Exchange Online PowerShell v2 module is required, do you want to install it?" -ForegroundColor Yellow
+      Write-Host "Exchange Online PowerShell v3 module is required, do you want to install it?" -ForegroundColor Yellow
       
       $install = Read-Host Do you want to install module? [Y] Yes [N] No 
       if($install -match "[yY]") 
       { 
-        Write-Host "Installing Exchange Online PowerShell v2 module" -ForegroundColor Cyan
+        Write-Host "Installing Exchange Online PowerShell v3 module" -ForegroundColor Cyan
         Install-Module ExchangeOnlineManagement -Repository PSGallery -AllowClobber -Force
       } 
       else
       {
-	      Write-Error "Please install EXO v2 module."
+	      Write-Error "Please install EXO v3 module."
       }
     }
 
@@ -99,7 +99,7 @@ Function ConnectTo-EXO {
 	    }
     }
     else{
-      Write-Error "Please install EXO v2 module."
+      Write-Error "Please install EXO v3 module."
     }
   }
 }

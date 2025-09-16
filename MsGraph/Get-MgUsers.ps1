@@ -39,6 +39,13 @@ param(
 
   [Parameter(
     Mandatory = $false,
+    HelpMessage = "Include guest account"
+  )]
+  [ValidateSet("true", "false")]
+  [string]$guest = "false",
+
+  [Parameter(
+    Mandatory = $false,
     HelpMessage = "Enter path to save the CSV file"
   )]
   [string]$path = ".\ADUsers-$((Get-Date -format "MMM-dd-yyyy").ToString()).csv"
@@ -79,12 +86,25 @@ Function Get-Users {
         $select = $properties
       }
 
-      # Get enabled, disabled or both users
-      switch ($enabled)
-      {
-        "true" {$filter = "AccountEnabled eq true and UserType eq 'member'"}
-        "false" {$filter = "AccountEnabled eq false and UserType eq 'member'"}
-        "both" {$filter = "UserType eq 'member'"}
+      # Build user type filter
+      if ($guest -eq "true") {
+          $userTypeFilter = "(UserType eq 'member' or UserType eq 'guest')"
+      } else {
+          $userTypeFilter = "UserType eq 'member'"
+      }
+
+      # Build enabled filter
+      switch ($enabled) {
+          "true"  { $enabledFilter = "AccountEnabled eq true" }
+          "false" { $enabledFilter = "AccountEnabled eq false" }
+          "both"  { $enabledFilter = $null }
+      }
+
+      # Combine filters
+      if ($enabledFilter) {
+          $filter = "$enabledFilter and $userTypeFilter"
+      } else {
+          $filter = $userTypeFilter
       }
 
       # Get the users
@@ -129,7 +149,7 @@ Function Get-AllMgUsers {
 # Check if MS Graph module is installed
 if (Get-InstalledModule Microsoft.Graph) {
   # Connect to MS Graph
-  Connect-MgGraph -Scopes "User.Read.All"
+  #Connect-MgGraph -Scopes "User.Read.All"
 }else{
   Write-Host "Microsoft Graph module not found - please install it" -ForegroundColor Black -BackgroundColor Yellow
   exit

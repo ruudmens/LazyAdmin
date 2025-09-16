@@ -67,7 +67,7 @@ Function ConnectTo-EXO {
 	    # Check if there is a active EXO sessions
 	    $psSessions = Get-PSSession | Select-Object -Property State, Name
 	    If (((@($psSessions) -like '@{State=Opened; Name=ExchangeOnlineInternalSession*').Count -gt 0) -ne $true) {
-        Write-Host "Connecting to Exchange Onlie" -ForegroundColor Cyan
+        Write-Host "Connecting to Exchange Online" -ForegroundColor Cyan
 		    Connect-ExchangeOnline -UserPrincipalName $adminUPN -ShowBanner:$false
 	    }
     }
