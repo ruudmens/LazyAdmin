@@ -118,3 +118,4 @@ ForcedHandshake = 5
 Add-Content -path $filePath -Value $confFileContent
 
 Write-Host "Script completed, configuration file saved in $($filePath.FullName)" -ForegroundColor Green
+Read-Host -Prompt "Press Enter to exit"
