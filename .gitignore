@@ -1,5 +1,6 @@
 Office365/MFAEnabledNotification.html
 Office365/Test-SMTP.ps1
+SmartMirror/config/config.js
 StaffOffboarding/MailTemplateUserRemovedtoAdmin.html
 StaffOffboarding/MailTemplateUserRemovedtoAdmin.html
 # Personal stuff to ignore

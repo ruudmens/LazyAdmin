@@ -60,7 +60,7 @@ let config = {
 			classes: "default everyone",
 			disabled: false,
 			config: {
-				apikey: "<api-key>",
+				apikey: process.env.OPENWEATHERMAP_API_KEY || "",
 				latitude: "52.291610",
 				longitude: "4.578690",
 				updateInterval: "10", 
@@ -85,10 +85,10 @@ let config = {
 			header: "Travel Time",
 			classes: 'morning_scheduler',
 			config: {
-					key: '<api-key>',
+					key: process.env.GOOGLE_ROUTE_API_KEY || "",
 					directionsRequest:{
-							origin: '<home-address>',
-							destination: '<office-address>'
+							origin: process.env.HOME_ADDRESS || "",
+							destination: process.env.OFFICE_ADDRESS || ""
 					},
 					refreshPeriod: 10,
 					showMap: false,
@@ -101,10 +101,10 @@ let config = {
 			position: 'bottom_left',
 			classes: 'morning_scheduler',
 			config: {
-					key: '<api-key>',
+					key: process.env.GOOGLE_ROUTE_API_KEY || "",
 					directionsRequest:{
-						origin: '<home-address>',
-						destination: '<office-address-2>'
+						origin: process.env.HOME_ADDRESS || "",
+						destination: process.env.OFFICE_ADDRESS_2 || ""
 					},
 					refreshPeriod: 10,
 					showMap: false,
@@ -152,7 +152,7 @@ let config = {
 						calendars: [
 								{
 									symbol: "calendar-day",
-									calendarID: "<calendar-id>"
+									calendarID: process.env.GOOGLE_CALENDAR_ID || ""
 								},        
 						],
 						maximumEntries: 5,
